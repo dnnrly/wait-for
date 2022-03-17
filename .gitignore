@@ -5,6 +5,13 @@
 *.so
 *.dylib
 
+# Project specific
+/wait-for
+
+# IDEs
+.idea/
+*.iml
+
 # Test binary, built with `go test -c`
 *.test
 

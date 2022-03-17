@@ -1,0 +1,11 @@
+targets:
+  http-connection:
+    type: http
+    target: http://localhost/health
+  timeout-connection:
+    type: http
+    target: http://localhost:81/health
+    timeout: 3s
+  tcp-connection:
+    type: tcp
+    target: localhost:80
