@@ -2,10 +2,11 @@ package main
 
 import (
 	"errors"
-	"gopkg.in/yaml.v3"
 	"io"
 	"strings"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 const DefaultTimeout = time.Second * 5
@@ -37,7 +38,7 @@ func NewConfigFromFile(r io.Reader) (*Config, error) {
 	if config.DefaultTimeout == 0 {
 		config.DefaultTimeout = DefaultTimeout
 	}
-	for t, _ := range config.Targets {
+	for t := range config.Targets {
 		if config.Targets[t].Timeout == 0 {
 			target := config.Targets[t]
 			target.Timeout = config.DefaultTimeout

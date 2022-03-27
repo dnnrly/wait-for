@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/spf13/afero"
 	"testing"
 	"time"
+
+	"github.com/spf13/afero"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -29,7 +30,7 @@ func TestOpenConfig_errorOnFileOpenFailure(t *testing.T) {
 
 func TestOpenConfig_errorOnFileParsingFailure(t *testing.T) {
 	mockFS := afero.NewMemMapFs()
-	afero.WriteFile(mockFS, "./wait-for.yaml", []byte("this isn't yaml!"), 0444)
+	_ = afero.WriteFile(mockFS, "./wait-for.yaml", []byte("this isn't yaml!"), 0444)
 
 	config, err := openConfig("./wait-for.yaml", "", afero.NewReadOnlyFs(mockFS))
 	assert.Error(t, err)
@@ -38,7 +39,7 @@ func TestOpenConfig_errorOnFileParsingFailure(t *testing.T) {
 
 func TestOpenConfig_errorOnParsingDefaultTimeout(t *testing.T) {
 	mockFS := afero.NewMemMapFs()
-	afero.WriteFile(mockFS, "./wait-for.yaml", []byte(defaultConfigYaml()), 0444)
+	_ = afero.WriteFile(mockFS, "./wait-for.yaml", []byte(defaultConfigYaml()), 0444)
 
 	config, err := openConfig("./wait-for.yaml", "invalid duration", afero.NewReadOnlyFs(mockFS))
 	assert.Error(t, err)
@@ -47,7 +48,7 @@ func TestOpenConfig_errorOnParsingDefaultTimeout(t *testing.T) {
 
 func TestOpenConfig_defaultTimeoutCanBeSet(t *testing.T) {
 	mockFS := afero.NewMemMapFs()
-	afero.WriteFile(mockFS, "./wait-for.yaml", []byte(defaultConfigYaml()), 0444)
+	_ = afero.WriteFile(mockFS, "./wait-for.yaml", []byte(defaultConfigYaml()), 0444)
 
 	config, err := openConfig("./wait-for.yaml", "19s", afero.NewReadOnlyFs(mockFS))
 	assert.NoError(t, err)

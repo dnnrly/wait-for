@@ -94,9 +94,7 @@ func (s *stepsData) getRequests() []string {
 	defer s.requestsLock.Unlock()
 
 	var requests []string
-	for _, r := range s.requests {
-		requests = append(requests, r)
-	}
+	requests = append(requests, s.requests...)
 
 	return requests
 }
@@ -112,9 +110,7 @@ func (s *stepsData) getConnections() []string {
 	defer s.connectionsLock.Unlock()
 
 	var connections []string
-	for _, r := range s.connections {
-		connections = append(connections, r)
-	}
+	connections = append(connections, s.connections...)
 
 	return connections
 }
@@ -136,7 +132,7 @@ func (s *stepsData) iRunWaitforWithParameters(params string) error {
 	s.output = b.String()
 	s.statusCode = cmd.ProcessState.ExitCode()
 
-	s.duration = time.Now().Sub(start)
+	s.duration = time.Since(start)
 
 	return nil
 }
