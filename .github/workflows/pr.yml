@@ -12,7 +12,7 @@ jobs:
       - name: Install dependencies
         run: make test-deps
       - name: Unit test
-        run: make ci-test
+        run: make test
       - name: Linting
         run: make lint
       - name: Acceptance test
