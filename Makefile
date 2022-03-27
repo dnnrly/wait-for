@@ -44,8 +44,8 @@ clean-deps:
 ./tmp:
 	mkdir -p ./tmp
 
-.PHONY: test-deps
-test-deps: ./bin/tparse ./bin/golangci-lint
+.PHONY: deps
+deps: ./bin/tparse ./bin/golangci-lint
 	go get -v ./...
 	go mod tidy
 

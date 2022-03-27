@@ -10,7 +10,7 @@ jobs:
         with:
           go-version: '1.17'
       - name: Install dependencies
-        run: make test-deps
+        run: make deps
       - name: Unit test
         run: make test
       - name: Linting
