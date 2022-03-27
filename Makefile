@@ -26,17 +26,10 @@ build: ## build the application
 test: ## run unit tests
 	go test -race ./...
 
-.PHONY: docker-alpine
-docker-alpine: ## build the alpine3.11 image
-	docker build -f docker/alpine/Dockerfile -t wait-for:alpine .
-
-.PHONY: docker-golang
-docker-bionic: ## build the bionic image
-	docker build -f docker/golang/Dockerfile -t wait-for:golang .
-
-.PHONY: docker-build
-docker-build: docker-alpine docker-golang
-
 .PHONY: acceptance-test
 acceptance-test: build ## run acceptance tests
 	cd test && godog
+
+.PHONY: acceptance-test-docker
+acceptance-test-docker: ## run acceptance tests in Docker (if you can't open local ports reliably)
+	docker-compose -f test/docker-compose.yml up --build --abort-on-container-exit godog
