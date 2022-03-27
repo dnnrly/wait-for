@@ -3,7 +3,7 @@ Feature: Configuration from CLI
   Scenario: Usage exits with error
     When I run wait-for with parameters "-h"
     Then the output contains "Usage of"
-    And wait-for exits with an error
+    And wait-for exits without error
 
   Scenario: Waits on a HTTP service
     Given I have an HTTP server running on port 80 that responds with 200
