@@ -60,16 +60,6 @@ creating artifacts using Docker for the different targets being used.
 $ make build
 ```
 
-### Releasing/Publishing
-
-The release process will use Docker to build the tool for the target platforms
-(Docker image types) and push them to Artifactory. You will probably not need
-to use thism directly.
-
-```shell script
-$ make publish
-```
-
 ### Unit tests
 
 You can run the tests as the build system would, using the following command:
@@ -93,4 +83,11 @@ expected.
 $ make acceptance-test
 ```
 
+Depending on how your system is set up, it might not be possible for you to
+open up the necessary ports to run the acceptance tests. To get around this
+you can run those same tests in Docker
 
+
+```shell script
+$ make acceptance-test-docker
+```
