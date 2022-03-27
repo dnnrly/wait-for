@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestConfig_fromYAML(t *testing.T) {
@@ -82,9 +83,9 @@ func TestConfig_AddFromString(t *testing.T) {
 func TestConfig_Filters(t *testing.T) {
 	config := NewConfig()
 
-	config.AddFromString("http://some-host/endpoint")
-	config.AddFromString("https://some-host/endpoint")
-	config.AddFromString("http://another-host/endpoint")
+	_ = config.AddFromString("http://some-host/endpoint")
+	_ = config.AddFromString("https://some-host/endpoint")
+	_ = config.AddFromString("http://another-host/endpoint")
 	config.Targets["listener-tcp"] = TargetConfig{
 		Target: "tcp:listener-tcp:9090",
 	}

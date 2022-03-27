@@ -1,0 +1,21 @@
+name: Validate for PR
+on: push
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.17'
+      - name: Install dependencies
+        run: make test-deps
+      - name: Unit test
+        run: make test
+      - name: Linting
+        run: make lint
+      - name: Acceptance test
+        run: make build acceptance-test-docker
+        env:
+          GO111MODULE: on

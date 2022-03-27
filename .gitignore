@@ -4,6 +4,8 @@
 *.dll
 *.so
 *.dylib
+bin/
+tmp/
 
 # Project specific
 /wait-for
