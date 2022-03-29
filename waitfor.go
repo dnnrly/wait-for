@@ -11,15 +11,22 @@ import (
 	"github.com/spf13/afero"
 )
 
-type WaiterFunc func(string, string) error
+// WaiterFunc is used to implement waiting for a specific type of target.
+// The name is used in the error and target is the actual destination being tested.
+type WaiterFunc func(name string, target string) error
 type Logger func(string, ...interface{})
 
+// NullLogger can be used in place of a real logging function
 var NullLogger = func(f string, a ...interface{}) {}
+
+// SupportedWaiters is a mapping of known protocol names to waiter implementations
 var SupportedWaiters = map[string]WaiterFunc{
 	"http": HTTPWaiter,
 	"tcp":  TCPWaiter,
 }
 
+// WaitOn implements waiting for many targets, using the location of config file provided with named targets to wait until
+// all of those targets are responding as expected
 func WaitOn(configFile string, fs afero.Fs, logger Logger, timeoutParam string, targets []string, waiters map[string]WaiterFunc) error {
 	config, err := openConfig(configFile, timeoutParam, fs)
 	if err != nil {
