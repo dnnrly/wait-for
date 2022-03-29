@@ -61,6 +61,10 @@ lint: ## run linting
 test: ## run unit tests
 	go test -race -json ./... | tparse -all
 
+.PHONY: ci-test
+ci-test: ## ci target - run tests to generate coverage data
+	go test -race -coverprofile=coverage.txt -covermode=atomic ./...
+
 .PHONY: acceptance-test
 acceptance-test: build ## run acceptance tests
 	cd test && godog
