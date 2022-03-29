@@ -1,14 +1,12 @@
-package main
+package waitfor
 
 import (
-	"flag"
 	"fmt"
-	"golang.org/x/sync/errgroup"
-	"log"
 	"net"
 	"net/http"
-	"os"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 
 	"github.com/spf13/afero"
 )
@@ -16,38 +14,9 @@ import (
 type WaiterFunc func(string, string) error
 type Logger func(string, ...interface{})
 
-var nullLogger = func(f string, a ...interface{}) {}
+var NullLogger = func(f string, a ...interface{}) {}
 
-func main() {
-	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-
-	timeoutParam := "5s"
-	configFile := ""
-	var quiet bool
-
-	flag.StringVar(&timeoutParam, "timeout", timeoutParam, "time to wait for services to become available")
-	flag.StringVar(&configFile, "config", "", "configuration file to use")
-	flag.BoolVar(&quiet, "quiet", false, "reduce output to the minimum")
-	flag.Parse()
-
-	fs := afero.NewOsFs()
-
-	logger := func(f string, a ...interface{}) {
-		log.Printf(f, a...)
-	}
-
-	if quiet {
-		logger = nullLogger
-	}
-
-	err := run(configFile, fs, logger, timeoutParam, flag.Args())
-	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "%v", err)
-		os.Exit(1)
-	}
-}
-
-func run(configFile string, fs afero.Fs, logger Logger, timeoutParam string, targets []string) error {
+func WaitOn(configFile string, fs afero.Fs, logger Logger, timeoutParam string, targets []string) error {
 	config, err := openConfig(configFile, timeoutParam, fs)
 	if err != nil {
 		return err

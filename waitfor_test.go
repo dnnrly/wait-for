@@ -1,4 +1,4 @@
-package main
+package waitfor
 
 import (
 	"fmt"
@@ -57,17 +57,17 @@ func TestOpenConfig_defaultTimeoutCanBeSet(t *testing.T) {
 }
 
 func TestRun_errorsOnConfigFileFailure(t *testing.T) {
-	err := run("non-existent", afero.NewMemMapFs(), nullLogger, "invalid", []string{"http://localhost"})
+	err := WaitOn("non-existent", afero.NewMemMapFs(), NullLogger, "invalid", []string{"http://localhost"})
 	assert.Error(t, err)
 }
 
 func TestRun_errorsOnParseFailure(t *testing.T) {
-	err := run("", afero.NewMemMapFs(), nullLogger, "invalid", []string{"http://localhost"})
+	err := WaitOn("", afero.NewMemMapFs(), NullLogger, "invalid", []string{"http://localhost"})
 	assert.Error(t, err)
 }
 
 func TestRun_errorsOnConfigFailure(t *testing.T) {
-	err := run("", afero.NewMemMapFs(), nullLogger, "invalid", []string{"localhost"})
+	err := WaitOn("", afero.NewMemMapFs(), NullLogger, "invalid", []string{"localhost"})
 	assert.Error(t, err)
 }
 

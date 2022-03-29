@@ -51,7 +51,7 @@ deps: ./bin/tparse ./bin/golangci-lint
 
 .PHONY: build
 build: ## build the application
-	go build -o wait-for
+	go build -o wait-for ./cmd/wait-for
 
 .PHONY: lint
 lint: ## run linting
@@ -59,7 +59,7 @@ lint: ## run linting
 
 .PHONY: test
 test: ## run unit tests
-	go test -race -json ./... | tparse -all
+	go test -race -cover -json ./... | tparse -all
 
 .PHONY: ci-test
 ci-test: ## ci target - run tests to generate coverage data
