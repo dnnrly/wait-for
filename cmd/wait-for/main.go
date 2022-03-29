@@ -32,7 +32,7 @@ func main() {
 		logger = waitfor.NullLogger
 	}
 
-	err := waitfor.WaitOn(configFile, fs, logger, timeoutParam, flag.Args())
+	err := waitfor.WaitOn(configFile, fs, logger, timeoutParam, flag.Args(), waitfor.SupportedWaiters)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "%v", err)
 		os.Exit(1)

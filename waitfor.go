@@ -15,8 +15,12 @@ type WaiterFunc func(string, string) error
 type Logger func(string, ...interface{})
 
 var NullLogger = func(f string, a ...interface{}) {}
+var SupportedWaiters = map[string]WaiterFunc{
+	"http": HTTPWaiter,
+	"tcp":  TCPWaiter,
+}
 
-func WaitOn(configFile string, fs afero.Fs, logger Logger, timeoutParam string, targets []string) error {
+func WaitOn(configFile string, fs afero.Fs, logger Logger, timeoutParam string, targets []string, waiters map[string]WaiterFunc) error {
 	config, err := openConfig(configFile, timeoutParam, fs)
 	if err != nil {
 		return err
@@ -31,8 +35,7 @@ func WaitOn(configFile string, fs afero.Fs, logger Logger, timeoutParam string, 
 		}
 	}
 	filtered := config.Filter(targets)
-
-	err = waitOnTargets(logger, filtered.Targets)
+	err = waitOnTargets(logger, filtered.Targets, waiters)
 	if err != nil {
 		return err
 	}
@@ -64,17 +67,12 @@ func openConfig(configFile, defaultTimeout string, fs afero.Fs) (*Config, error)
 	return config, nil
 }
 
-func waitOnTargets(logger Logger, targets map[string]TargetConfig) error {
+func waitOnTargets(logger Logger, targets map[string]TargetConfig, waiters map[string]WaiterFunc) error {
 	var eg errgroup.Group
 
 	for name, target := range targets {
-		var waiter WaiterFunc
-		switch target.Type {
-		case "tcp":
-			waiter = tcpWait
-		case "http":
-			waiter = httpWait
-		default:
+		waiter, found := waiters[target.Type]
+		if !found {
 			return fmt.Errorf("unknown target type %s", target.Type)
 		}
 
@@ -116,7 +114,7 @@ func waitOnSingleTarget(name string, logger Logger, target TargetConfig, waiter 
 	return nil
 }
 
-func tcpWait(name string, target string) error {
+func TCPWaiter(name string, target string) error {
 	conn, err := net.Dial("tcp", target)
 	if err != nil {
 		return fmt.Errorf("could not connect to %s: %v", name, err)
@@ -126,7 +124,7 @@ func tcpWait(name string, target string) error {
 	return nil
 }
 
-func httpWait(name string, target string) error {
+func HTTPWaiter(name string, target string) error {
 	client := &http.Client{
 		Timeout: time.Second * 1,
 	}

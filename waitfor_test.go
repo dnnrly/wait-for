@@ -1,6 +1,7 @@
 package waitfor
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_isSuccess(t *testing.T) {
@@ -57,17 +59,17 @@ func TestOpenConfig_defaultTimeoutCanBeSet(t *testing.T) {
 }
 
 func TestRun_errorsOnConfigFileFailure(t *testing.T) {
-	err := WaitOn("non-existent", afero.NewMemMapFs(), NullLogger, "invalid", []string{"http://localhost"})
+	err := WaitOn("non-existent", afero.NewMemMapFs(), NullLogger, "invalid", []string{"http://localhost"}, map[string]WaiterFunc{})
 	assert.Error(t, err)
 }
 
 func TestRun_errorsOnParseFailure(t *testing.T) {
-	err := WaitOn("", afero.NewMemMapFs(), NullLogger, "invalid", []string{"http://localhost"})
+	err := WaitOn("", afero.NewMemMapFs(), NullLogger, "invalid", []string{"http://localhost"}, map[string]WaiterFunc{})
 	assert.Error(t, err)
 }
 
 func TestRun_errorsOnConfigFailure(t *testing.T) {
-	err := WaitOn("", afero.NewMemMapFs(), NullLogger, "invalid", []string{"localhost"})
+	err := WaitOn("", afero.NewMemMapFs(), NullLogger, "invalid", []string{"localhost"}, map[string]WaiterFunc{})
 	assert.Error(t, err)
 }
 
@@ -125,4 +127,47 @@ func TestWaitOnSingleTarget_failsIfTimerExpires(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.NotContains(t, logs, "finished waiting for name")
+}
+
+func TestWaitOnTargets_failsForUnknownType(t *testing.T) {
+	err := waitOnTargets(
+		NullLogger,
+		map[string]TargetConfig{"unkown": {Type: "unknown type"}},
+		map[string]WaiterFunc{"type": func(string, string) error { return errors.New("") }},
+	)
+
+	require.Error(t, err)
+	assert.Equal(t, "unknown target type unknown type", err.Error())
+}
+
+func TestWaitOnTargets_selectsCorrectWaiter(t *testing.T) {
+	err := waitOnTargets(
+		NullLogger,
+		map[string]TargetConfig{
+			"type 1": {Type: "t1"},
+		},
+		map[string]WaiterFunc{
+			"t1": func(string, string) error { return nil },
+			"t2": func(string, string) error { return errors.New("an error") },
+		},
+	)
+
+	require.NoError(t, err)
+}
+
+func TestWaitOnTargets_failsWhenWaiterFails(t *testing.T) {
+	err := waitOnTargets(
+		NullLogger,
+		map[string]TargetConfig{
+			"type 1": {Type: "t1"},
+			"type 2": {Type: "t2"},
+		},
+		map[string]WaiterFunc{
+			"t1": func(string, string) error { return nil },
+			"t2": func(string, string) error { return errors.New("an error") },
+		},
+	)
+
+	require.Error(t, err)
+	assert.Equal(t, "timed out waiting for type 2: an error", err.Error())
 }
