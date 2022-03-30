@@ -87,10 +87,9 @@ services:
     build: .
     ports:
       - "8080"
-    command: sh -c 'wait-for tcp:db:5432 && ./your-api'
+    command: sh -c 'wait-for tcp:db:5432 && ./your-api
     depends_on:
-      - dbWORD:-postgres}
-      DB_NAME: weallvote-api
+      - db
   db:
     image: "postgres:13-alpine"
     command: "-c log_statement=all"
