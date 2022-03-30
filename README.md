@@ -11,7 +11,7 @@ to become available before continuing - or timeout and exit with an error.
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/dnnrly/wait-for/Release%20workflow)](https://github.com/dnnrly/wait-for/actions?query=workflow%3A%22Release+workflow%22)
 [![codecov](https://codecov.io/gh/dnnrly/wait-for/branch/master/graph/badge.svg?token=HW5W5HEEEX)](https://codecov.io/gh/dnnrly/wait-for)
 [![report card](https://goreportcard.com/badge/github.com/dnnrly/wait-for)](https://goreportcard.com/report/github.com/dnnrly/wait-for)
-[![godoc](https://godoc.org/github.com/dnnrly/wait-for?status.svg)](http://godoc.org/github.com/dnnrly/wait-for)
+[![Go Reference](https://pkg.go.dev/badge/github.com/dnnrly/wait-for.svg)](https://pkg.go.dev/github.com/dnnrly/wait-for)
 
 ![GitHub watchers](https://img.shields.io/github/watchers/dnnrly/wait-for?style=social)
 ![GitHub stars](https://img.shields.io/github/stars/dnnrly/wait-for?style=social)
