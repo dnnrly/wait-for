@@ -22,7 +22,7 @@ to become available before continuing - or timeout and exit with an error.
 Using the `go` command:
 
 ```shell
-go install github.com/dnnrly/wait-for@latest
+go install github.com/dnnrly/wait-for/cmd/wait-for@latest
 ```
 
 If you don't have Go installed (in a Docker container, for example) then you can take advantage of the pre-built versions. Check out the [releases](https://github.com/dnnrly/wait-for/releases) and check out the links for direct downloads. You can download and unpack a release like so:
