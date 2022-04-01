@@ -104,9 +104,7 @@ services:
 ### Building the tool
 
 To build the tool so that you can run it locally, you can use the following
-command. Please note that when releasing and publishing the tool, you won't
-actually be using the version built for the local platform - you will be
-creating artifacts using Docker for the different targets being used.
+command.
 
 ```shell script
 $ make build
