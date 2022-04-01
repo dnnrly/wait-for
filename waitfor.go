@@ -1,53 +1,33 @@
-package main
+package waitfor
 
 import (
-	"flag"
 	"fmt"
-	"golang.org/x/sync/errgroup"
-	"log"
 	"net"
 	"net/http"
-	"os"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 
 	"github.com/spf13/afero"
 )
 
-type WaiterFunc func(string, string) error
+// WaiterFunc is used to implement waiting for a specific type of target.
+// The name is used in the error and target is the actual destination being tested.
+type WaiterFunc func(name string, target string) error
 type Logger func(string, ...interface{})
 
-var nullLogger = func(f string, a ...interface{}) {}
+// NullLogger can be used in place of a real logging function
+var NullLogger = func(f string, a ...interface{}) {}
 
-func main() {
-	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-
-	timeoutParam := "5s"
-	configFile := ""
-	var quiet bool
-
-	flag.StringVar(&timeoutParam, "timeout", timeoutParam, "time to wait for services to become available")
-	flag.StringVar(&configFile, "config", "", "configuration file to use")
-	flag.BoolVar(&quiet, "quiet", false, "reduce output to the minimum")
-	flag.Parse()
-
-	fs := afero.NewOsFs()
-
-	logger := func(f string, a ...interface{}) {
-		log.Printf(f, a...)
-	}
-
-	if quiet {
-		logger = nullLogger
-	}
-
-	err := run(configFile, fs, logger, timeoutParam, flag.Args())
-	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "%v", err)
-		os.Exit(1)
-	}
+// SupportedWaiters is a mapping of known protocol names to waiter implementations
+var SupportedWaiters = map[string]WaiterFunc{
+	"http": HTTPWaiter,
+	"tcp":  TCPWaiter,
 }
 
-func run(configFile string, fs afero.Fs, logger Logger, timeoutParam string, targets []string) error {
+// WaitOn implements waiting for many targets, using the location of config file provided with named targets to wait until
+// all of those targets are responding as expected
+func WaitOn(configFile string, fs afero.Fs, logger Logger, timeoutParam string, targets []string, waiters map[string]WaiterFunc) error {
 	config, err := openConfig(configFile, timeoutParam, fs)
 	if err != nil {
 		return err
@@ -62,8 +42,7 @@ func run(configFile string, fs afero.Fs, logger Logger, timeoutParam string, tar
 		}
 	}
 	filtered := config.Filter(targets)
-
-	err = waitOnTargets(logger, filtered.Targets)
+	err = waitOnTargets(logger, filtered.Targets, waiters)
 	if err != nil {
 		return err
 	}
@@ -95,17 +74,12 @@ func openConfig(configFile, defaultTimeout string, fs afero.Fs) (*Config, error)
 	return config, nil
 }
 
-func waitOnTargets(logger Logger, targets map[string]TargetConfig) error {
+func waitOnTargets(logger Logger, targets map[string]TargetConfig, waiters map[string]WaiterFunc) error {
 	var eg errgroup.Group
 
 	for name, target := range targets {
-		var waiter WaiterFunc
-		switch target.Type {
-		case "tcp":
-			waiter = tcpWait
-		case "http":
-			waiter = httpWait
-		default:
+		waiter, found := waiters[target.Type]
+		if !found {
 			return fmt.Errorf("unknown target type %s", target.Type)
 		}
 
@@ -147,7 +121,7 @@ func waitOnSingleTarget(name string, logger Logger, target TargetConfig, waiter 
 	return nil
 }
 
-func tcpWait(name string, target string) error {
+func TCPWaiter(name string, target string) error {
 	conn, err := net.Dial("tcp", target)
 	if err != nil {
 		return fmt.Errorf("could not connect to %s: %v", name, err)
@@ -157,7 +131,7 @@ func tcpWait(name string, target string) error {
 	return nil
 }
 
-func httpWait(name string, target string) error {
+func HTTPWaiter(name string, target string) error {
 	client := &http.Client{
 		Timeout: time.Second * 1,
 	}

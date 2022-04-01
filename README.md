@@ -11,11 +11,35 @@ to become available before continuing - or timeout and exit with an error.
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/dnnrly/wait-for/Release%20workflow)](https://github.com/dnnrly/wait-for/actions?query=workflow%3A%22Release+workflow%22)
 [![codecov](https://codecov.io/gh/dnnrly/wait-for/branch/master/graph/badge.svg?token=HW5W5HEEEX)](https://codecov.io/gh/dnnrly/wait-for)
 [![report card](https://goreportcard.com/badge/github.com/dnnrly/wait-for)](https://goreportcard.com/report/github.com/dnnrly/wait-for)
-[![godoc](https://godoc.org/github.com/dnnrly/wait-for?status.svg)](http://godoc.org/github.com/dnnrly/wait-for)
+[![Go Reference](https://pkg.go.dev/badge/github.com/dnnrly/wait-for.svg)](https://pkg.go.dev/github.com/dnnrly/wait-for)
 
 ![GitHub watchers](https://img.shields.io/github/watchers/dnnrly/wait-for?style=social)
 ![GitHub stars](https://img.shields.io/github/stars/dnnrly/wait-for?style=social)
 [![Twitter URL](https://img.shields.io/twitter/url?style=social&url=https%3A%2F%2Fgithub.com%2Fdnnrly%2Fwait-for)](https://twitter.com/intent/tweet?url=https://github.com/dnnrly/wait-for)
+
+## Installing `wait-for`
+
+Using the `go` command:
+
+```shell
+go install github.com/dnnrly/wait-for/cmd/wait-for@latest
+```
+
+If you don't have Go installed (in a Docker container, for example) then you can take advantage of the pre-built versions. Check out the [releases](https://github.com/dnnrly/wait-for/releases) and check out the links for direct downloads. You can download and unpack a release like so:
+
+```shell
+wget https://github.com/dnnrly/wait-for/releases/download/v0.0.1/wait-for_0.0.1_linux_386.tar.gz
+gunzip wait-for_0.0.1_linux_386.tar.gz
+tar -xfv wait-for_0.0.1_linux_386.tar
+```
+
+In your Dockerfile, you can do this:
+```docker
+ADD https://github.com/dnnrly/wait-for/releases/download/v0.0.1/wait-for_0.0.1_linux_386.tar.gz wait-for.tar.gz
+RUN gunzip wait-for.tar.gz && tar -xf wait-for.tar
+```
+
+Feel free to choose from any of the other releases though.
 
 ## Using `wait-for`
 
@@ -49,6 +73,30 @@ wait-for:
   snmp-service:
     type: tcp
     target: snmp-trap-dns:514
+```
+
+### Using `wait-for` in Docker Compose
+
+You can use `wait-for` to do some of the orchestration for you in your compose file. A good example
+would be something like this:
+
+```yaml
+version: '3'
+services:
+  web:
+    build: .
+    ports:
+      - "8080"
+    command: sh -c 'wait-for tcp:db:5432 && ./your-api
+    depends_on:
+      - db
+  db:
+    image: "postgres:13-alpine"
+    command: "-c log_statement=all"
+    environment:
+      POSTGRES_DB: weallvote-api
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
 ```
 
 ## Developing `wait-for`
