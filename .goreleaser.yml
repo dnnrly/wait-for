@@ -1,0 +1,7 @@
+# .goreleaser.yaml
+builds:
+  - main: ./cmd/wait-for
+    flags:
+      - -v
+    env:
+      - CGO_ENABLED=0
