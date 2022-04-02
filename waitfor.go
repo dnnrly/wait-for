@@ -27,11 +27,7 @@ var SupportedWaiters = map[string]WaiterFunc{
 
 // WaitOn implements waiting for many targets, using the location of config file provided with named targets to wait until
 // all of those targets are responding as expected
-func WaitOn(configFile string, fs afero.Fs, logger Logger, timeoutParam string, targets []string, waiters map[string]WaiterFunc) error {
-	config, err := openConfig(configFile, timeoutParam, fs)
-	if err != nil {
-		return err
-	}
+func WaitOn(config *Config, logger Logger, targets []string, waiters map[string]WaiterFunc) error {
 
 	for _, target := range targets {
 		if !config.GotTarget(target) {
@@ -42,7 +38,7 @@ func WaitOn(configFile string, fs afero.Fs, logger Logger, timeoutParam string, 
 		}
 	}
 	filtered := config.Filter(targets)
-	err = waitOnTargets(logger, filtered.Targets, waiters)
+	err := waitOnTargets(logger, filtered.Targets, waiters)
 	if err != nil {
 		return err
 	}
@@ -50,7 +46,7 @@ func WaitOn(configFile string, fs afero.Fs, logger Logger, timeoutParam string, 
 	return nil
 }
 
-func openConfig(configFile, defaultTimeout string, fs afero.Fs) (*Config, error) {
+func OpenConfig(configFile, defaultTimeout string, fs afero.Fs) (*Config, error) {
 	var config *Config
 	if configFile == "" {
 		config = NewConfig()

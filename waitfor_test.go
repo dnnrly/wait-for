@@ -25,7 +25,7 @@ func Test_isSuccess(t *testing.T) {
 func TestOpenConfig_errorOnFileOpenFailure(t *testing.T) {
 	mockFS := afero.NewMemMapFs()
 
-	config, err := openConfig("./wait-for.yaml", "", afero.NewReadOnlyFs(mockFS))
+	config, err := OpenConfig("./wait-for.yaml", "", afero.NewReadOnlyFs(mockFS))
 	assert.Error(t, err)
 	assert.Nil(t, config)
 }
@@ -34,7 +34,7 @@ func TestOpenConfig_errorOnFileParsingFailure(t *testing.T) {
 	mockFS := afero.NewMemMapFs()
 	_ = afero.WriteFile(mockFS, "./wait-for.yaml", []byte("this isn't yaml!"), 0444)
 
-	config, err := openConfig("./wait-for.yaml", "", afero.NewReadOnlyFs(mockFS))
+	config, err := OpenConfig("./wait-for.yaml", "", afero.NewReadOnlyFs(mockFS))
 	assert.Error(t, err)
 	assert.Nil(t, config)
 }
@@ -43,7 +43,7 @@ func TestOpenConfig_errorOnParsingDefaultTimeout(t *testing.T) {
 	mockFS := afero.NewMemMapFs()
 	_ = afero.WriteFile(mockFS, "./wait-for.yaml", []byte(defaultConfigYaml()), 0444)
 
-	config, err := openConfig("./wait-for.yaml", "invalid duration", afero.NewReadOnlyFs(mockFS))
+	config, err := OpenConfig("./wait-for.yaml", "invalid duration", afero.NewReadOnlyFs(mockFS))
 	assert.Error(t, err)
 	assert.Nil(t, config)
 }
@@ -52,24 +52,19 @@ func TestOpenConfig_defaultTimeoutCanBeSet(t *testing.T) {
 	mockFS := afero.NewMemMapFs()
 	_ = afero.WriteFile(mockFS, "./wait-for.yaml", []byte(defaultConfigYaml()), 0444)
 
-	config, err := openConfig("./wait-for.yaml", "19s", afero.NewReadOnlyFs(mockFS))
+	config, err := OpenConfig("./wait-for.yaml", "19s", afero.NewReadOnlyFs(mockFS))
 	assert.NoError(t, err)
 	assert.NotNil(t, config)
 	assert.Equal(t, time.Second*19, config.DefaultTimeout)
 }
 
-func TestRun_errorsOnConfigFileFailure(t *testing.T) {
-	err := WaitOn("non-existent", afero.NewMemMapFs(), NullLogger, "invalid", []string{"http://localhost"}, map[string]WaiterFunc{})
+func TestWaitOn_errorsInvalidTarget(t *testing.T) {
+	err := WaitOn(NewConfig(), NullLogger, []string{"localhost"}, map[string]WaiterFunc{})
 	assert.Error(t, err)
 }
 
 func TestRun_errorsOnParseFailure(t *testing.T) {
-	err := WaitOn("", afero.NewMemMapFs(), NullLogger, "invalid", []string{"http://localhost"}, map[string]WaiterFunc{})
-	assert.Error(t, err)
-}
-
-func TestRun_errorsOnConfigFailure(t *testing.T) {
-	err := WaitOn("", afero.NewMemMapFs(), NullLogger, "invalid", []string{"localhost"}, map[string]WaiterFunc{})
+	err := WaitOn(NewConfig(), NullLogger, []string{"http://localhost"}, map[string]WaiterFunc{})
 	assert.Error(t, err)
 }
 
