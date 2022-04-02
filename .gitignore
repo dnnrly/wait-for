@@ -6,6 +6,7 @@
 *.dylib
 bin/
 tmp/
+dist/
 
 # Project specific
 /wait-for

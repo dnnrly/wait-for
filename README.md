@@ -9,7 +9,7 @@ to become available before continuing - or timeout and exit with an error.
 
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/dnnrly/wait-for)](https://github.com/dnnrly/wait-for/releases/latest)
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/dnnrly/wait-for/Release%20workflow)](https://github.com/dnnrly/wait-for/actions?query=workflow%3A%22Release+workflow%22)
-[![codecov](https://codecov.io/gh/dnnrly/wait-for/branch/master/graph/badge.svg?token=HW5W5HEEEX)](https://codecov.io/gh/dnnrly/wait-for)
+[![codecov](https://codecov.io/gh/dnnrly/wait-for/branch/main/graph/badge.svg?token=s0OfKkTFuI)](https://codecov.io/gh/dnnrly/wait-for)
 [![report card](https://goreportcard.com/badge/github.com/dnnrly/wait-for)](https://goreportcard.com/report/github.com/dnnrly/wait-for)
 [![Go Reference](https://pkg.go.dev/badge/github.com/dnnrly/wait-for.svg)](https://pkg.go.dev/github.com/dnnrly/wait-for)
 
