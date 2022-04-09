@@ -1,6 +1,6 @@
 # `wait-for`
 
-This is a tool that waits for an event from the CLI before continuing. Simples. But it does it
+This is a CLI tool that waits for an event before continuing. Simples. But it does it
 cross platform and as a single dependency that can be downloaded into your container
 or environment.
 
