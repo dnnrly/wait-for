@@ -14,10 +14,12 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 
 	timeoutParam := "5s"
+	httpTimeoutParam := "1s"
 	configFile := ""
 	var quiet bool
 
 	flag.StringVar(&timeoutParam, "timeout", timeoutParam, "time to wait for services to become available")
+	flag.StringVar(&httpTimeoutParam, "http_timeout", httpTimeoutParam, "timeout for requests made by a http client")
 	flag.StringVar(&configFile, "config", "", "configuration file to use")
 	flag.BoolVar(&quiet, "quiet", false, "reduce output to the minimum")
 	flag.Parse()
@@ -32,7 +34,7 @@ func main() {
 		logger = waitfor.NullLogger
 	}
 
-	config, err := waitfor.OpenConfig(configFile, timeoutParam, fs)
+	config, err := waitfor.OpenConfig(configFile, timeoutParam, httpTimeoutParam, fs)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "%v", err)
 		os.Exit(1)

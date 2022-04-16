@@ -9,8 +9,11 @@ import (
 	yaml "gopkg.in/yaml.v3"
 )
 
-// DefautTimeout is the amount of time to wait for target before failing
+// DefaultTimeout is the amount of time to wait for target before failing
 const DefaultTimeout = time.Second * 5
+
+// DefaultHTTPClientTimeout a default value for a time limit for requests made by http client
+const DefaultHTTPClientTimeout = time.Second
 
 // TargetConfig is the configuration of a single target
 type TargetConfig struct {
@@ -20,19 +23,23 @@ type TargetConfig struct {
 	Target string
 	// Timeout is the timeout to use for this specific target if it is different to DefaultTimeout
 	Timeout time.Duration
+	// HTTPClientTimeout is the timeout for requests made by a http client
+	HTTPClientTimeout time.Duration `yaml:"http_client_timeout"`
 }
 
 // Config represents all of the config that can be defined in a config file
 type Config struct {
-	DefaultTimeout time.Duration `yaml:"default-timeout"`
-	Targets        map[string]TargetConfig
+	DefaultTimeout           time.Duration `yaml:"default-timeout"`
+	Targets                  map[string]TargetConfig
+	DefaultHTTPClientTimeout time.Duration `yaml:"default_http_client_timeout"`
 }
 
 // NewConfig creates an empty Config
 func NewConfig() *Config {
 	return &Config{
-		DefaultTimeout: DefaultTimeout,
-		Targets:        map[string]TargetConfig{},
+		DefaultTimeout:           DefaultTimeout,
+		Targets:                  map[string]TargetConfig{},
+		DefaultHTTPClientTimeout: DefaultHTTPClientTimeout,
 	}
 }
 
@@ -46,10 +53,18 @@ func NewConfigFromFile(r io.Reader) (*Config, error) {
 	if config.DefaultTimeout == 0 {
 		config.DefaultTimeout = DefaultTimeout
 	}
+	if config.DefaultHTTPClientTimeout == 0 {
+		config.DefaultHTTPClientTimeout = DefaultHTTPClientTimeout
+	}
 	for t := range config.Targets {
 		if config.Targets[t].Timeout == 0 {
 			target := config.Targets[t]
 			target.Timeout = config.DefaultTimeout
+			config.Targets[t] = target
+		}
+		if config.Targets[t].HTTPClientTimeout == 0 {
+			target := config.Targets[t]
+			target.HTTPClientTimeout = config.DefaultHTTPClientTimeout
 			config.Targets[t] = target
 		}
 	}
@@ -75,9 +90,10 @@ func (c *Config) AddFromString(t string) error {
 
 	if strings.HasPrefix(t, "http:") || strings.HasPrefix(t, "https:") {
 		c.Targets[t] = TargetConfig{
-			Target:  t,
-			Type:    "http",
-			Timeout: c.DefaultTimeout,
+			Target:            t,
+			Type:              "http",
+			Timeout:           c.DefaultTimeout,
+			HTTPClientTimeout: c.DefaultHTTPClientTimeout,
 		}
 		return nil
 	}

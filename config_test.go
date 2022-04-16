@@ -17,6 +17,7 @@ func TestConfig_fromYAML(t *testing.T) {
 	assert.Equal(t, "http://localhost/health", config.Targets["http-connection"].Target)
 	assert.Equal(t, time.Second*10, config.Targets["http-connection"].Timeout)
 	assert.Equal(t, "http", config.Targets["http-connection"].Type)
+	assert.Equal(t, time.Second*5, config.Targets["http-connection"].HTTPClientTimeout)
 	assert.Equal(t, "localhost:80", config.Targets["tcp-connection"].Target)
 	assert.Equal(t, "tcp", config.Targets["tcp-connection"].Type)
 	assert.Equal(t, time.Second*5, config.Targets["tcp-connection"].Timeout)
@@ -33,6 +34,18 @@ func TestConfig_incorrectTimeDurationFails(t *testing.T) {
 	assert.Nil(t, config)
 }
 
+func TestConfig_incorrectHTTPTimeoutDurationFails(t *testing.T) {
+	config, err := NewConfigFromFile(strings.NewReader(`targets:
+  timeout-connection:
+    type: http
+    target: http://localhost/health
+    timeout: 10s
+    http_client_timeout: not parsable`))
+
+	assert.Error(t, err)
+	assert.Nil(t, config)
+}
+
 func TestConfig_settingDefaultTimeoutWorks(t *testing.T) {
 	config, err := NewConfigFromFile(strings.NewReader(`
 default-timeout: 18s
@@ -43,6 +56,19 @@ targets:
 
 	assert.NoError(t, err)
 	assert.Equal(t, time.Second*18, config.Targets["http-connection"].Timeout)
+}
+
+func TestConfig_settingDefaultHTTPTimeoutWorks(t *testing.T) {
+	config, err := NewConfigFromFile(strings.NewReader(`
+default_http_client_timeout: 18s
+targets:
+  http-connection:
+    type: http
+    target: http://localhost/health
+    timeout: 10s`))
+
+	assert.NoError(t, err)
+	assert.Equal(t, time.Second*18, config.Targets["http-connection"].HTTPClientTimeout)
 }
 
 func TestConfig_GotTarget(t *testing.T) {
@@ -66,14 +92,17 @@ func TestConfig_AddFromString(t *testing.T) {
 	assert.Equal(t, "http://some-host/endpoint", config.Targets["http://some-host/endpoint"].Target)
 	assert.Equal(t, "http", config.Targets["http://some-host/endpoint"].Type)
 	assert.Equal(t, time.Second*5, config.Targets["http://some-host/endpoint"].Timeout)
+	assert.Equal(t, time.Second, config.Targets["http://some-host/endpoint"].HTTPClientTimeout)
 
 	assert.Equal(t, "https://some-host/endpoint", config.Targets["https://some-host/endpoint"].Target)
 	assert.Equal(t, "http", config.Targets["https://some-host/endpoint"].Type)
 	assert.Equal(t, time.Second*5, config.Targets["https://some-host/endpoint"].Timeout)
+	assert.Equal(t, time.Second, config.Targets["http://some-host/endpoint"].HTTPClientTimeout)
 
 	assert.Equal(t, "http://another-host/endpoint", config.Targets["http://another-host/endpoint"].Target)
 	assert.Equal(t, "http", config.Targets["http://another-host/endpoint"].Type)
 	assert.Equal(t, time.Second*5, config.Targets["http://some-host/endpoint"].Timeout)
+	assert.Equal(t, time.Second, config.Targets["http://some-host/endpoint"].HTTPClientTimeout)
 
 	assert.Equal(t, "listener-tcp:9090", config.Targets["tcp:listener-tcp:9090"].Target)
 	assert.Equal(t, "tcp", config.Targets["tcp:listener-tcp:9090"].Type)
@@ -100,6 +129,7 @@ func defaultConfigYaml() string {
     type: http
     target: http://localhost/health
     timeout: 10s
+    http_client_timeout: 5s
   tcp-connection:
     type: tcp
     target: localhost:80
