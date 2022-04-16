@@ -67,6 +67,7 @@ wait-for:
     target: http://the-service:8080/health?reload=true
     interval: 5s
     timeout: 60s
+    http_client_timeout: 3s
   another-service:
     type: http
     target: https://another-one
