@@ -24,14 +24,14 @@ type TargetConfig struct {
 	// Timeout is the timeout to use for this specific target if it is different to DefaultTimeout
 	Timeout time.Duration
 	// HTTPClientTimeout is the timeout for requests made by a http client
-	HTTPClientTimeout time.Duration `yaml:"http_client_timeout"`
+	HTTPClientTimeout time.Duration `yaml:"http-client-timeout"`
 }
 
 // Config represents all of the config that can be defined in a config file
 type Config struct {
 	DefaultTimeout           time.Duration `yaml:"default-timeout"`
 	Targets                  map[string]TargetConfig
-	DefaultHTTPClientTimeout time.Duration `yaml:"default_http_client_timeout"`
+	DefaultHTTPClientTimeout time.Duration `yaml:"default-http-client-timeout"`
 }
 
 // NewConfig creates an empty Config
@@ -57,16 +57,14 @@ func NewConfigFromFile(r io.Reader) (*Config, error) {
 		config.DefaultHTTPClientTimeout = DefaultHTTPClientTimeout
 	}
 	for t := range config.Targets {
+		target := config.Targets[t]
 		if config.Targets[t].Timeout == 0 {
-			target := config.Targets[t]
 			target.Timeout = config.DefaultTimeout
-			config.Targets[t] = target
 		}
 		if config.Targets[t].HTTPClientTimeout == 0 {
-			target := config.Targets[t]
 			target.HTTPClientTimeout = config.DefaultHTTPClientTimeout
-			config.Targets[t] = target
 		}
+		config.Targets[t] = target
 	}
 	return &config, nil
 }

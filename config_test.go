@@ -40,7 +40,7 @@ func TestConfig_incorrectHTTPTimeoutDurationFails(t *testing.T) {
     type: http
     target: http://localhost/health
     timeout: 10s
-    http_client_timeout: not parsable`))
+    http-client-timeout: not parsable`))
 
 	assert.Error(t, err)
 	assert.Nil(t, config)
@@ -60,7 +60,7 @@ targets:
 
 func TestConfig_settingDefaultHTTPTimeoutWorks(t *testing.T) {
 	config, err := NewConfigFromFile(strings.NewReader(`
-default_http_client_timeout: 18s
+default-http-client-timeout: 18s
 targets:
   http-connection:
     type: http
@@ -129,7 +129,7 @@ func defaultConfigYaml() string {
     type: http
     target: http://localhost/health
     timeout: 10s
-    http_client_timeout: 5s
+    http-client-timeout: 5s
   tcp-connection:
     type: tcp
     target: localhost:80
