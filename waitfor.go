@@ -13,7 +13,7 @@ import (
 
 // WaiterFunc is used to implement waiting for a specific type of target.
 // The name is used in the error and target is the actual destination being tested.
-type WaiterFunc func(name string, target string) error
+type WaiterFunc func(name string, target *TargetConfig) error
 type Logger func(string, ...interface{})
 
 // NullLogger can be used in place of a real logging function
@@ -46,7 +46,7 @@ func WaitOn(config *Config, logger Logger, targets []string, waiters map[string]
 	return nil
 }
 
-func OpenConfig(configFile, defaultTimeout string, fs afero.Fs) (*Config, error) {
+func OpenConfig(configFile, defaultTimeout, defaultHTTPTimeout string, fs afero.Fs) (*Config, error) {
 	var config *Config
 	if configFile == "" {
 		config = NewConfig()
@@ -66,6 +66,12 @@ func OpenConfig(configFile, defaultTimeout string, fs afero.Fs) (*Config, error)
 		return nil, fmt.Errorf("unable to parse timeout: %v", err)
 	}
 	config.DefaultTimeout = timeout
+
+	httpTimeout, err := time.ParseDuration(defaultHTTPTimeout)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse http timeout: %v", err)
+	}
+	config.DefaultHTTPClientTimeout = httpTimeout
 
 	return config, nil
 }
@@ -101,11 +107,11 @@ func waitOnTargets(logger Logger, targets map[string]TargetConfig, waiters map[s
 func waitOnSingleTarget(name string, logger Logger, target TargetConfig, waiter WaiterFunc) error {
 	end := time.Now().Add(target.Timeout)
 
-	err := waiter(name, target.Target)
+	err := waiter(name, &target)
 	for err != nil && end.After(time.Now()) {
 		logger("error while waiting for %s: %v", name, err)
 		time.Sleep(time.Second)
-		err = waiter(name, target.Target)
+		err = waiter(name, &target)
 	}
 
 	if err != nil {
@@ -117,8 +123,8 @@ func waitOnSingleTarget(name string, logger Logger, target TargetConfig, waiter 
 	return nil
 }
 
-func TCPWaiter(name string, target string) error {
-	conn, err := net.Dial("tcp", target)
+func TCPWaiter(name string, target *TargetConfig) error {
+	conn, err := net.Dial("tcp", target.Target)
 	if err != nil {
 		return fmt.Errorf("could not connect to %s: %v", name, err)
 	}
@@ -127,11 +133,11 @@ func TCPWaiter(name string, target string) error {
 	return nil
 }
 
-func HTTPWaiter(name string, target string) error {
+func HTTPWaiter(name string, target *TargetConfig) error {
 	client := &http.Client{
-		Timeout: time.Second * 1,
+		Timeout: target.HTTPClientTimeout,
 	}
-	req, _ := http.NewRequest("GET", target, nil)
+	req, _ := http.NewRequest("GET", target.Target, nil)
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("could not connect to %s: %v", name, err)

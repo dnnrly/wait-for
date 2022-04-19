@@ -25,7 +25,7 @@ func Test_isSuccess(t *testing.T) {
 func TestOpenConfig_errorOnFileOpenFailure(t *testing.T) {
 	mockFS := afero.NewMemMapFs()
 
-	config, err := OpenConfig("./wait-for.yaml", "", afero.NewReadOnlyFs(mockFS))
+	config, err := OpenConfig("./wait-for.yaml", "", "", afero.NewReadOnlyFs(mockFS))
 	assert.Error(t, err)
 	assert.Nil(t, config)
 }
@@ -34,7 +34,7 @@ func TestOpenConfig_errorOnFileParsingFailure(t *testing.T) {
 	mockFS := afero.NewMemMapFs()
 	_ = afero.WriteFile(mockFS, "./wait-for.yaml", []byte("this isn't yaml!"), 0444)
 
-	config, err := OpenConfig("./wait-for.yaml", "", afero.NewReadOnlyFs(mockFS))
+	config, err := OpenConfig("./wait-for.yaml", "", "", afero.NewReadOnlyFs(mockFS))
 	assert.Error(t, err)
 	assert.Nil(t, config)
 }
@@ -43,7 +43,16 @@ func TestOpenConfig_errorOnParsingDefaultTimeout(t *testing.T) {
 	mockFS := afero.NewMemMapFs()
 	_ = afero.WriteFile(mockFS, "./wait-for.yaml", []byte(defaultConfigYaml()), 0444)
 
-	config, err := OpenConfig("./wait-for.yaml", "invalid duration", afero.NewReadOnlyFs(mockFS))
+	config, err := OpenConfig("./wait-for.yaml", "invalid duration", "1s", afero.NewReadOnlyFs(mockFS))
+	assert.Error(t, err)
+	assert.Nil(t, config)
+}
+
+func TestOpenConfig_errorOnParsingDefaultHTTPTimeout(t *testing.T) {
+	mockFS := afero.NewMemMapFs()
+	_ = afero.WriteFile(mockFS, "./wait-for.yaml", []byte(defaultConfigYaml()), 0444)
+
+	config, err := OpenConfig("./wait-for.yaml", "10s", "invalid duration", afero.NewReadOnlyFs(mockFS))
 	assert.Error(t, err)
 	assert.Nil(t, config)
 }
@@ -52,10 +61,20 @@ func TestOpenConfig_defaultTimeoutCanBeSet(t *testing.T) {
 	mockFS := afero.NewMemMapFs()
 	_ = afero.WriteFile(mockFS, "./wait-for.yaml", []byte(defaultConfigYaml()), 0444)
 
-	config, err := OpenConfig("./wait-for.yaml", "19s", afero.NewReadOnlyFs(mockFS))
+	config, err := OpenConfig("./wait-for.yaml", "19s", "1s", afero.NewReadOnlyFs(mockFS))
 	assert.NoError(t, err)
 	assert.NotNil(t, config)
 	assert.Equal(t, time.Second*19, config.DefaultTimeout)
+}
+
+func TestOpenConfig_defaultHTTPTimeoutCanBeSet(t *testing.T) {
+	mockFS := afero.NewMemMapFs()
+	_ = afero.WriteFile(mockFS, "./wait-for.yaml", []byte(defaultConfigYaml()), 0444)
+
+	config, err := OpenConfig("./wait-for.yaml", "19s", "20s", afero.NewReadOnlyFs(mockFS))
+	assert.NoError(t, err)
+	assert.NotNil(t, config)
+	assert.Equal(t, time.Second*20, config.DefaultHTTPClientTimeout)
 }
 
 func TestWaitOn_errorsInvalidTarget(t *testing.T) {
@@ -76,7 +95,7 @@ func TestWaitOnSingleTarget_succeedsImmediately(t *testing.T) {
 		"name",
 		doLog,
 		TargetConfig{Timeout: time.Second * 2},
-		func(name string, target string) error { return nil },
+		func(name string, target *TargetConfig) error { return nil },
 	)
 
 	assert.NoError(t, err)
@@ -94,7 +113,7 @@ func TestWaitOnSingleTarget_succeedsAfterWaiting(t *testing.T) {
 		"name",
 		doLog,
 		TargetConfig{Timeout: time.Second * 2},
-		func(name string, target string) error {
+		func(name string, target *TargetConfig) error {
 			if waitUntil.After(time.Now()) {
 				return fmt.Errorf("there was an error")
 			}
@@ -115,7 +134,7 @@ func TestWaitOnSingleTarget_failsIfTimerExpires(t *testing.T) {
 		"name",
 		doLog,
 		TargetConfig{Timeout: time.Second * 2},
-		func(name string, target string) error {
+		func(name string, target *TargetConfig) error {
 			return fmt.Errorf("")
 		},
 	)
@@ -128,7 +147,7 @@ func TestWaitOnTargets_failsForUnknownType(t *testing.T) {
 	err := waitOnTargets(
 		NullLogger,
 		map[string]TargetConfig{"unkown": {Type: "unknown type"}},
-		map[string]WaiterFunc{"type": func(string, string) error { return errors.New("") }},
+		map[string]WaiterFunc{"type": func(string, *TargetConfig) error { return errors.New("") }},
 	)
 
 	require.Error(t, err)
@@ -142,8 +161,8 @@ func TestWaitOnTargets_selectsCorrectWaiter(t *testing.T) {
 			"type 1": {Type: "t1"},
 		},
 		map[string]WaiterFunc{
-			"t1": func(string, string) error { return nil },
-			"t2": func(string, string) error { return errors.New("an error") },
+			"t1": func(string, *TargetConfig) error { return nil },
+			"t2": func(string, *TargetConfig) error { return errors.New("an error") },
 		},
 	)
 
@@ -158,8 +177,8 @@ func TestWaitOnTargets_failsWhenWaiterFails(t *testing.T) {
 			"type 2": {Type: "t2"},
 		},
 		map[string]WaiterFunc{
-			"t1": func(string, string) error { return nil },
-			"t2": func(string, string) error { return errors.New("an error") },
+			"t1": func(string, *TargetConfig) error { return nil },
+			"t2": func(string, *TargetConfig) error { return errors.New("an error") },
 		},
 	)
 
