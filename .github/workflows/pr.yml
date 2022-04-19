@@ -1,11 +1,16 @@
 name: Validate for PR
-on: push
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
 jobs:
   validate:
     name: Validate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
           go-version: '1.17'
@@ -26,8 +31,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
     - uses: actions/setup-go@v2
       with:
         go-version: '1.17'
@@ -36,4 +39,4 @@ jobs:
       with:
         distribution: goreleaser
         version: latest
-        args: build --rm-dist --skip-validate
+        args: build --rm-dist --skip-validate --snapshot
