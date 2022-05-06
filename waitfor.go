@@ -1,12 +1,14 @@
 package waitfor
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
 	"time"
 
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
 
 	"github.com/spf13/afero"
 )
@@ -23,6 +25,7 @@ var NullLogger = func(f string, a ...interface{}) {}
 var SupportedWaiters = map[string]WaiterFunc{
 	"http": HTTPWaiter,
 	"tcp":  TCPWaiter,
+	"grpc": GRPCWaiter,
 }
 
 // WaitOn implements waiting for many targets, using the location of config file provided with named targets to wait until
@@ -146,6 +149,19 @@ func HTTPWaiter(name string, target *TargetConfig) error {
 	if !isSuccess(resp.StatusCode) {
 		return fmt.Errorf("got %d from %s", resp.StatusCode, name)
 	}
+
+	return nil
+}
+
+func GRPCWaiter(name string, target *TargetConfig) error {
+	ctx, cancel := context.WithTimeout(context.TODO(), target.Timeout)
+	defer cancel()
+
+	conn, err := grpc.DialContext(ctx, target.Target, grpc.WithBlock())
+	if err != nil {
+		return fmt.Errorf("could not connect to %s: %v", name, err)
+	}
+	defer conn.Close()
 
 	return nil
 }
