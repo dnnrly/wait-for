@@ -4,3 +4,5 @@ services:
     build:
       context: ..
       dockerfile: test/Dockerfile
+    volumes:
+      - ../:/working
