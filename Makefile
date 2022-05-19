@@ -46,6 +46,7 @@ clean-deps:
 
 .PHONY: deps
 deps: ./bin/tparse ./bin/golangci-lint
+	go install github.com/wadey/gocovmerge@b5bfa59
 	go get -v ./...
 	go mod tidy
 
@@ -64,6 +65,10 @@ test: ## run unit tests
 .PHONY: ci-test
 ci-test: ## ci target - run tests to generate coverage data
 	go test -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+.PHONY: coverage
+coverage: ## combine coverage reports
+	gocovmerge coverage.txt wait-for_coverage.txt
 
 .PHONY: acceptance-test
 acceptance-test: ## run acceptance tests

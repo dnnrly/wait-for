@@ -122,7 +122,7 @@ func (s *stepsData) Errorf(format string, args ...interface{}) {
 }
 
 func (s *stepsData) iRunWaitforWithParameters(params string) error {
-	collector := bincover.NewCoverageCollector("wait-for_coverage.out", true)
+	collector := bincover.NewCoverageCollector("wait-for_coverage.txt", true)
 	err := collector.Setup()
 	if err != nil {
 		return err

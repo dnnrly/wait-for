@@ -6,6 +6,7 @@ require (
 	github.com/confluentinc/bincover v0.2.0
 	github.com/cucumber/godog v0.10.0
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
+	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-memdb v1.3.0 // indirect
 	github.com/spf13/afero v1.4.1
 	github.com/stretchr/testify v1.6.1
