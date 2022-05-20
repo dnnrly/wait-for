@@ -68,7 +68,7 @@ ci-test: ## ci target - run tests to generate coverage data
 
 .PHONY: coverage
 coverage: ## combine coverage reports
-	gocovmerge coverage.txt wait-for_coverage.txt
+	gocovmerge coverage.txt wait-for_coverage.txt > coverage.txt
 
 .PHONY: acceptance-test
 acceptance-test: ## run acceptance tests
