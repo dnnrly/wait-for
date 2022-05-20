@@ -45,7 +45,7 @@ clean-deps:
 	mkdir -p ./tmp
 
 .PHONY: deps
-deps: ./bin/tparse ./bin/golangci-lint
+deps:
 	go install github.com/wadey/gocovmerge@b5bfa59
 	go get -v ./...
 	go mod tidy
