@@ -45,7 +45,8 @@ clean-deps:
 	mkdir -p ./tmp
 
 .PHONY: deps
-deps: ./bin/tparse ./bin/golangci-lint
+deps:
+	go install github.com/wadey/gocovmerge@b5bfa59
 	go get -v ./...
 	go mod tidy
 
@@ -65,10 +66,19 @@ test: ## run unit tests
 ci-test: ## ci target - run tests to generate coverage data
 	go test -race -coverprofile=coverage.txt -covermode=atomic ./...
 
+.PHONY: coverage
+coverage: ## combine coverage reports
+	gocovmerge coverage.txt wait-for_coverage.txt > coverage.txt
+
 .PHONY: acceptance-test
-acceptance-test: build ## run acceptance tests
+acceptance-test: ## run acceptance tests
+	go test ./cmd/wait-for -coverpkg=./... -c -o wait-for.test
 	cd test && godog
 
 .PHONY: acceptance-test-docker
 acceptance-test-docker: ## run acceptance tests in Docker (if you can't open local ports reliably)
 	docker-compose -f test/docker-compose.yml up --build --abort-on-container-exit godog
+
+.PHONY: acceptance-test-docker-shell
+acceptance-test-docker-shell: ## run a shell in the acceptance test docker container
+	docker-compose -f test/docker-compose.yml run godog bash

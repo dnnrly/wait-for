@@ -1,7 +1,6 @@
 package test
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"log"
@@ -12,9 +11,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/confluentinc/bincover"
 	"github.com/cucumber/godog"
 	"github.com/stretchr/testify/assert"
 )
+
+var binPath string = "../wait-for.test"
 
 type stepsData struct {
 	assertError error
@@ -120,17 +122,30 @@ func (s *stepsData) Errorf(format string, args ...interface{}) {
 }
 
 func (s *stepsData) iRunWaitforWithParameters(params string) error {
-	cmd := exec.Command("../wait-for", strings.Split(params, " ")...)
-
-	var b bytes.Buffer
-	cmd.Stderr = &b
-	cmd.Stdout = &b
+	collector := bincover.NewCoverageCollector("wait-for_coverage.txt", true)
+	err := collector.Setup()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err := collector.TearDown()
+		if err != nil {
+			panic(err)
+		}
+	}()
 
 	start := time.Now()
 
-	_ = cmd.Run()
-	s.output = b.String()
-	s.statusCode = cmd.ProcessState.ExitCode()
+	_, s.statusCode, _ = collector.RunBinary(
+		binPath,
+		"TestBincoverRunMain",
+		[]string{},
+		strings.Split(params, " "),
+		bincover.PostExec(func(cmd *exec.Cmd, output string, err error) error {
+			s.output = output
+			return nil
+		}),
+	)
 
 	s.duration = time.Since(start)
 
@@ -237,6 +252,8 @@ func (s *stepsData) listeningServerWaitsThenResponds(port int, duration string, 
 
 func InitializeTestSuite(ctx *godog.TestSuiteContext) {
 	ctx.BeforeSuite(func() {
+	})
+	ctx.AfterSuite(func() {
 	})
 }
 
