@@ -20,8 +20,8 @@ jobs:
         run: make ci-test
       - name: Acceptance test
         run: make build acceptance-test-docker
-      - name: Collect coverage data
-        run: make coverage
+      # - name: Collect coverage data
+      #   run: make coverage
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         env:
