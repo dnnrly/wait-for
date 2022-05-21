@@ -49,6 +49,10 @@ Feel free to choose from any of the other releases though.
 $ wait-for http://your-service-here:8080/health https://another-service/
 ``` 
 
+### Waiting for gRPC services
+```shell script
+$ wait-for grpc-server:8092 other-grpc-server:9091
+```
 
 ### Preconfiguring services to connect to
 
@@ -71,6 +75,9 @@ wait-for:
   another-service:
     type: http
     target: https://another-one
+  grpcService:
+    type: grpc
+    target: localhost:9092
   snmp-service:
     type: tcp
     target: snmp-trap-dns:514
