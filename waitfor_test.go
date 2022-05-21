@@ -3,11 +3,13 @@ package waitfor
 import (
 	"errors"
 	"fmt"
+	"github.com/phayes/freeport"
+	"google.golang.org/grpc"
+	"net"
 	"testing"
 	"time"
 
 	"github.com/spf13/afero"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -184,4 +186,66 @@ func TestWaitOnTargets_failsWhenWaiterFails(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Equal(t, "timed out waiting for type 2: an error", err.Error())
+}
+
+func setupGrpcServer(t *testing.T) (*grpc.Server, net.Listener, error) {
+	port, err := freeport.GetFreePort()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get free tcp port: %v", err)
+	}
+
+	addr := fmt.Sprintf("localhost:%d", port)
+	lis, err := net.Listen("tcp", addr)
+	if err != nil {
+		lis.Close()
+		return nil, nil, fmt.Errorf("failed to listen on %s: %v", addr, err)
+	}
+
+	server := grpc.NewServer()
+	go func() {
+		err = server.Serve(lis)
+		if err != nil {
+			t.Errorf("failed to serve grpc on addr %s: %v", lis.Addr().String(), err)
+			return
+		}
+	}()
+
+	// If server.Serve threw an error, fail now
+	if t.Failed() {
+		t.FailNow()
+	}
+	return server, lis, nil
+}
+
+func TestGRPCWaiter_succeedsImmediately(t *testing.T) {
+	server, lis, err := setupGrpcServer(t)
+	if err != nil {
+		t.Fatalf("failed to create grpc server: %v", err)
+	}
+	defer server.Stop()
+
+	err = waitOnSingleTarget(lis.Addr().String(), NullLogger, TargetConfig{
+		Target:  lis.Addr().String(),
+		Timeout: DefaultTimeout,
+		Type:    "grpc",
+	}, SupportedWaiters["grpc"])
+
+	assert.Nil(t, err, "error waiting for grpc: %v", err)
+}
+
+func TestGRPCWaiter_failsToConnect(t *testing.T) {
+	server, lis, err := setupGrpcServer(t)
+	if err != nil {
+		t.Fatalf("failed to create grpc server: %v", err)
+	}
+	defer server.Stop()
+
+	err = waitOnSingleTarget(lis.Addr().String(), NullLogger, TargetConfig{
+		Target:  "localhost:8081",
+		Timeout: DefaultTimeout,
+		Type:    "grpc",
+	}, SupportedWaiters["grpc"])
+
+	assert.NotNil(t, err, "expected error but error was nil")
+	fmt.Println(err)
 }
