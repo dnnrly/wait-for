@@ -50,9 +50,19 @@ $ wait-for http://your-service-here:8080/health https://another-service/
 ``` 
 
 ### Waiting for gRPC services
+
 ```shell script
 $ wait-for grpc-server:8092 other-grpc-server:9091
 ```
+
+### Waiting for DNS changes
+
+```shell script
+$ wait-for dns:google.com
+```
+
+This will wait for the list of IP addresses bound to that DNS name to be
+updated, regardless of order.
 
 ### Preconfiguring services to connect to
 
