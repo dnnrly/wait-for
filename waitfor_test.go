@@ -3,11 +3,12 @@ package waitfor
 import (
 	"errors"
 	"fmt"
-	"github.com/phayes/freeport"
-	"google.golang.org/grpc"
 	"net"
 	"testing"
 	"time"
+
+	"github.com/phayes/freeport"
+	"google.golang.org/grpc"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -80,12 +81,12 @@ func TestOpenConfig_defaultHTTPTimeoutCanBeSet(t *testing.T) {
 }
 
 func TestWaitOn_errorsInvalidTarget(t *testing.T) {
-	err := WaitOn(NewConfig(), NullLogger, []string{"localhost"}, map[string]WaiterFunc{})
+	err := WaitOn(NewConfig(), NullLogger, []string{"localhost"}, map[string]Waiter{})
 	assert.Error(t, err)
 }
 
 func TestRun_errorsOnParseFailure(t *testing.T) {
-	err := WaitOn(NewConfig(), NullLogger, []string{"http://localhost"}, map[string]WaiterFunc{})
+	err := WaitOn(NewConfig(), NullLogger, []string{"http://localhost"}, map[string]Waiter{})
 	assert.Error(t, err)
 }
 
@@ -97,7 +98,7 @@ func TestWaitOnSingleTarget_succeedsImmediately(t *testing.T) {
 		"name",
 		doLog,
 		TargetConfig{Timeout: time.Second * 2},
-		func(name string, target *TargetConfig) error { return nil },
+		WaiterFunc(func(name string, target *TargetConfig) error { return nil }),
 	)
 
 	assert.NoError(t, err)
@@ -115,12 +116,12 @@ func TestWaitOnSingleTarget_succeedsAfterWaiting(t *testing.T) {
 		"name",
 		doLog,
 		TargetConfig{Timeout: time.Second * 2},
-		func(name string, target *TargetConfig) error {
+		WaiterFunc(func(name string, target *TargetConfig) error {
 			if waitUntil.After(time.Now()) {
 				return fmt.Errorf("there was an error")
 			}
 			return nil
-		},
+		}),
 	)
 
 	assert.NoError(t, err)
@@ -136,9 +137,9 @@ func TestWaitOnSingleTarget_failsIfTimerExpires(t *testing.T) {
 		"name",
 		doLog,
 		TargetConfig{Timeout: time.Second * 2},
-		func(name string, target *TargetConfig) error {
+		WaiterFunc(func(name string, target *TargetConfig) error {
 			return fmt.Errorf("")
-		},
+		}),
 	)
 
 	assert.Error(t, err)
@@ -149,7 +150,7 @@ func TestWaitOnTargets_failsForUnknownType(t *testing.T) {
 	err := waitOnTargets(
 		NullLogger,
 		map[string]TargetConfig{"unkown": {Type: "unknown type"}},
-		map[string]WaiterFunc{"type": func(string, *TargetConfig) error { return errors.New("") }},
+		map[string]Waiter{"type": WaiterFunc(func(string, *TargetConfig) error { return errors.New("") })},
 	)
 
 	require.Error(t, err)
@@ -162,9 +163,9 @@ func TestWaitOnTargets_selectsCorrectWaiter(t *testing.T) {
 		map[string]TargetConfig{
 			"type 1": {Type: "t1"},
 		},
-		map[string]WaiterFunc{
-			"t1": func(string, *TargetConfig) error { return nil },
-			"t2": func(string, *TargetConfig) error { return errors.New("an error") },
+		map[string]Waiter{
+			"t1": WaiterFunc(func(string, *TargetConfig) error { return nil }),
+			"t2": WaiterFunc(func(string, *TargetConfig) error { return errors.New("an error") }),
 		},
 	)
 
@@ -178,9 +179,9 @@ func TestWaitOnTargets_failsWhenWaiterFails(t *testing.T) {
 			"type 1": {Type: "t1"},
 			"type 2": {Type: "t2"},
 		},
-		map[string]WaiterFunc{
-			"t1": func(string, *TargetConfig) error { return nil },
-			"t2": func(string, *TargetConfig) error { return errors.New("an error") },
+		map[string]Waiter{
+			"t1": WaiterFunc(func(string, *TargetConfig) error { return nil }),
+			"t2": WaiterFunc(func(string, *TargetConfig) error { return errors.New("an error") }),
 		},
 	)
 
