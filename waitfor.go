@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"sort"
+	"strings"
 	"time"
 
 	"google.golang.org/grpc/credentials/insecure"
@@ -33,11 +35,7 @@ type Logger func(string, ...interface{})
 var NullLogger = func(f string, a ...interface{}) {}
 
 // SupportedWaiters is a mapping of known protocol names to waiter implementations
-var SupportedWaiters = map[string]Waiter{
-	"http": WaiterFunc(HTTPWaiter),
-	"tcp":  WaiterFunc(TCPWaiter),
-	"grpc": WaiterFunc(GRPCWaiter),
-}
+var SupportedWaiters map[string]Waiter
 
 // WaitOn implements waiting for many targets, using the location of config file provided with named targets to wait until
 // all of those targets are responding as expected
@@ -191,4 +189,60 @@ func isSuccess(code int) bool {
 	}
 
 	return true
+}
+
+type DNSLookup func(host string) ([]net.IP, error)
+
+type DNSWaiter struct {
+	lookup DNSLookup
+	logger Logger
+}
+
+func NewDNSWaiter(lookup DNSLookup, logger Logger) *DNSWaiter {
+	return &DNSWaiter{
+		lookup: lookup,
+		logger: logger,
+	}
+}
+
+type IPList []net.IP
+
+func (l IPList) Equals(r IPList) bool {
+	return l.String() == r.String()
+}
+
+func (l IPList) Len() int {
+	return len(l)
+}
+func (l IPList) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
+func (l IPList) Less(i, j int) bool { return strings.Compare(l[i].String(), l[j].String()) < 0 }
+func (l IPList) String() string {
+	sort.Sort(l)
+	var s []string
+	for _, v := range l {
+		s = append(s, v.String())
+	}
+	return strings.Join(s, ",")
+}
+
+func (w *DNSWaiter) Wait(host string, target *TargetConfig) error {
+	in, _ := w.lookup(target.Target)
+	initial := IPList(in)
+	last := initial
+
+	start := time.Now()
+	now := start
+
+	for now.Sub(start) < target.Timeout {
+		w.logger("got DNS result %s", last)
+		time.Sleep(time.Second)
+		l, _ := w.lookup(target.Target)
+		last = IPList(l)
+
+		if !initial.Equals(last) {
+			return nil
+		}
+		now = time.Now()
+	}
+	return fmt.Errorf("timed out waiting for DNS update to %s", host)
 }

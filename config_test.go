@@ -85,9 +85,10 @@ func TestConfig_AddFromString(t *testing.T) {
 	assert.NoError(t, config.AddFromString("https://some-host/endpoint"))
 	assert.NoError(t, config.AddFromString("http://another-host/endpoint"))
 	assert.NoError(t, config.AddFromString("tcp:listener-tcp:9090"))
+	assert.NoError(t, config.AddFromString("dns:some.dns.com"))
 	assert.Error(t, config.AddFromString("udp:some-listener:9090"))
 
-	assert.Equal(t, 4, len(config.Targets))
+	assert.Equal(t, 5, len(config.Targets))
 
 	assert.Equal(t, "http://some-host/endpoint", config.Targets["http://some-host/endpoint"].Target)
 	assert.Equal(t, "http", config.Targets["http://some-host/endpoint"].Type)
@@ -107,6 +108,10 @@ func TestConfig_AddFromString(t *testing.T) {
 	assert.Equal(t, "listener-tcp:9090", config.Targets["tcp:listener-tcp:9090"].Target)
 	assert.Equal(t, "tcp", config.Targets["tcp:listener-tcp:9090"].Type)
 	assert.Equal(t, time.Second*5, config.Targets["tcp:listener-tcp:9090"].Timeout)
+
+	assert.Equal(t, "some.dns.com", config.Targets["dns:some.dns.com"].Target)
+	assert.Equal(t, "dns", config.Targets["dns:some.dns.com"].Type)
+	assert.Equal(t, time.Second*5, config.Targets["dns:some.dns.com"].Timeout)
 }
 
 func TestConfig_Filters(t *testing.T) {

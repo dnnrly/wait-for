@@ -7,6 +7,12 @@ or environment.
 Typically, you would use this to wait on another resource (such as an HTTP resource)
 to become available before continuing - or timeout and exit with an error.
 
+At the moment, you can wait for a few different kinds of thing. They are:
+
+* HTTP or HTTPS success response
+* TCP or GRPC connection
+* DNS IP resolve address change
+
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/dnnrly/wait-for)](https://github.com/dnnrly/wait-for/releases/latest)
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/dnnrly/wait-for/Release%20workflow)](https://github.com/dnnrly/wait-for/actions?query=workflow%3A%22Release+workflow%22)
 [![codecov](https://codecov.io/gh/dnnrly/wait-for/branch/main/graph/badge.svg?token=s0OfKkTFuI)](https://codecov.io/gh/dnnrly/wait-for)
@@ -92,6 +98,9 @@ wait-for:
   snmp-service:
     type: tcp
     target: snmp-trap-dns:514
+  dns-thing:
+    type: dns
+    target: your.r53-entry.com
 ```
 
 ### Using `wait-for` in Docker Compose

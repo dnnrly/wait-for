@@ -96,6 +96,15 @@ func (c *Config) AddFromString(t string) error {
 		return nil
 	}
 
+	if strings.HasPrefix(t, "dns:") {
+		c.Targets[t] = TargetConfig{
+			Target:  strings.Replace(t, "dns:", "", 1),
+			Type:    "dns",
+			Timeout: c.DefaultTimeout,
+		}
+		return nil
+	}
+
 	return errors.New("unable to understand target " + t)
 }
 

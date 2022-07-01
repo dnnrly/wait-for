@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"os"
 
 	waitfor "github.com/dnnrly/wait-for"
@@ -38,6 +39,13 @@ func main() {
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "%v", err)
 		os.Exit(1)
+	}
+
+	waitfor.SupportedWaiters = map[string]waitfor.Waiter{
+		"http": waitfor.WaiterFunc(waitfor.HTTPWaiter),
+		"tcp":  waitfor.WaiterFunc(waitfor.TCPWaiter),
+		"grpc": waitfor.WaiterFunc(waitfor.GRPCWaiter),
+		"dns":  waitfor.NewDNSWaiter(net.LookupIP, logger),
 	}
 
 	err = waitfor.WaitOn(config, logger, flag.Args(), waitfor.SupportedWaiters)
