@@ -3,15 +3,25 @@ package waitfor
 import (
 	"errors"
 	"fmt"
-	"github.com/phayes/freeport"
-	"google.golang.org/grpc"
 	"net"
 	"testing"
 	"time"
 
+	"github.com/phayes/freeport"
+	"google.golang.org/grpc"
+
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
+
+var (
+	ip1 = net.IPv4(byte(0x01), byte(0x02), byte(0x03), byte(0x04))
+	ip2 = net.IPv4(byte(0x11), byte(0x12), byte(0x13), byte(0x14))
+	ip3 = net.IPv4(byte(0x21), byte(0x22), byte(0x23), byte(0x24))
+	ip4 = net.IPv4(byte(0x04), byte(0x05), byte(0x06), byte(0x07))
+	ip5 = net.IPv4(byte(0x14), byte(0x15), byte(0x16), byte(0x17))
+	ip6 = net.IPv4(byte(0x24), byte(0x22), byte(0x23), byte(0x24))
 )
 
 func Test_isSuccess(t *testing.T) {
@@ -80,12 +90,12 @@ func TestOpenConfig_defaultHTTPTimeoutCanBeSet(t *testing.T) {
 }
 
 func TestWaitOn_errorsInvalidTarget(t *testing.T) {
-	err := WaitOn(NewConfig(), NullLogger, []string{"localhost"}, map[string]WaiterFunc{})
+	err := WaitOn(NewConfig(), NullLogger, []string{"localhost"}, map[string]Waiter{})
 	assert.Error(t, err)
 }
 
 func TestRun_errorsOnParseFailure(t *testing.T) {
-	err := WaitOn(NewConfig(), NullLogger, []string{"http://localhost"}, map[string]WaiterFunc{})
+	err := WaitOn(NewConfig(), NullLogger, []string{"http://localhost"}, map[string]Waiter{})
 	assert.Error(t, err)
 }
 
@@ -97,7 +107,7 @@ func TestWaitOnSingleTarget_succeedsImmediately(t *testing.T) {
 		"name",
 		doLog,
 		TargetConfig{Timeout: time.Second * 2},
-		func(name string, target *TargetConfig) error { return nil },
+		WaiterFunc(func(name string, target *TargetConfig) error { return nil }),
 	)
 
 	assert.NoError(t, err)
@@ -115,12 +125,12 @@ func TestWaitOnSingleTarget_succeedsAfterWaiting(t *testing.T) {
 		"name",
 		doLog,
 		TargetConfig{Timeout: time.Second * 2},
-		func(name string, target *TargetConfig) error {
+		WaiterFunc(func(name string, target *TargetConfig) error {
 			if waitUntil.After(time.Now()) {
 				return fmt.Errorf("there was an error")
 			}
 			return nil
-		},
+		}),
 	)
 
 	assert.NoError(t, err)
@@ -136,9 +146,9 @@ func TestWaitOnSingleTarget_failsIfTimerExpires(t *testing.T) {
 		"name",
 		doLog,
 		TargetConfig{Timeout: time.Second * 2},
-		func(name string, target *TargetConfig) error {
+		WaiterFunc(func(name string, target *TargetConfig) error {
 			return fmt.Errorf("")
-		},
+		}),
 	)
 
 	assert.Error(t, err)
@@ -149,7 +159,7 @@ func TestWaitOnTargets_failsForUnknownType(t *testing.T) {
 	err := waitOnTargets(
 		NullLogger,
 		map[string]TargetConfig{"unkown": {Type: "unknown type"}},
-		map[string]WaiterFunc{"type": func(string, *TargetConfig) error { return errors.New("") }},
+		map[string]Waiter{"type": WaiterFunc(func(string, *TargetConfig) error { return errors.New("") })},
 	)
 
 	require.Error(t, err)
@@ -162,9 +172,9 @@ func TestWaitOnTargets_selectsCorrectWaiter(t *testing.T) {
 		map[string]TargetConfig{
 			"type 1": {Type: "t1"},
 		},
-		map[string]WaiterFunc{
-			"t1": func(string, *TargetConfig) error { return nil },
-			"t2": func(string, *TargetConfig) error { return errors.New("an error") },
+		map[string]Waiter{
+			"t1": WaiterFunc(func(string, *TargetConfig) error { return nil }),
+			"t2": WaiterFunc(func(string, *TargetConfig) error { return errors.New("an error") }),
 		},
 	)
 
@@ -178,9 +188,9 @@ func TestWaitOnTargets_failsWhenWaiterFails(t *testing.T) {
 			"type 1": {Type: "t1"},
 			"type 2": {Type: "t2"},
 		},
-		map[string]WaiterFunc{
-			"t1": func(string, *TargetConfig) error { return nil },
-			"t2": func(string, *TargetConfig) error { return errors.New("an error") },
+		map[string]Waiter{
+			"t1": WaiterFunc(func(string, *TargetConfig) error { return nil }),
+			"t2": WaiterFunc(func(string, *TargetConfig) error { return errors.New("an error") }),
 		},
 	)
 
@@ -228,9 +238,25 @@ func TestGRPCWaiter_succeedsImmediately(t *testing.T) {
 		Target:  lis.Addr().String(),
 		Timeout: DefaultTimeout,
 		Type:    "grpc",
-	}, SupportedWaiters["grpc"])
+	}, WaiterFunc(GRPCWaiter))
 
 	assert.Nil(t, err, "error waiting for grpc: %v", err)
+}
+
+func TestIPList_Equality(t *testing.T) {
+	l1 := IPList([]net.IP{ip1, ip2, ip3})
+	l2 := IPList([]net.IP{ip1, ip3, ip2})
+	l3 := IPList([]net.IP{ip3, ip3, ip2})
+	l4 := IPList([]net.IP{ip1, ip2, ip3, ip3})
+
+	assert.Truef(t, l1.Equals(l2), "%s != %s", l1, l2)
+	assert.Truef(t, l2.Equals(l1), "%s != %s", l2, l1)
+	assert.Falsef(t, l1.Equals(l3), "%s == %s", l1, l3)
+	assert.Falsef(t, l1.Equals(l4), "%s == %s", l1, l4)
+}
+
+func TestIPList_String(t *testing.T) {
+	assert.Equal(t, "1.2.3.4,17.18.19.20,33.34.35.36", IPList{ip1, ip2, ip3}.String())
 }
 
 func TestGRPCWaiter_failsToConnect(t *testing.T) {
@@ -244,8 +270,110 @@ func TestGRPCWaiter_failsToConnect(t *testing.T) {
 		Target:  "localhost:8081",
 		Timeout: DefaultTimeout,
 		Type:    "grpc",
-	}, SupportedWaiters["grpc"])
+	}, WaiterFunc(GRPCWaiter))
 
 	assert.NotNil(t, err, "expected error but error was nil")
 	fmt.Println(err)
+}
+
+func TestDNSWaiter_resolvesCorrectDNSName(t *testing.T) {
+	name := ""
+	w := NewDNSWaiter(func(host string) ([]net.IP, error) {
+		name = host
+		return []net.IP{ip1, ip2, ip3}, nil
+	}, NullLogger)
+
+	_ = w.Wait("dns1", &TargetConfig{
+		Target: "dns.name",
+	})
+	assert.Equal(t, "dns.name", name)
+}
+
+func TestDNSWaiter_timesOutOnSameDNS(t *testing.T) {
+	w := NewDNSWaiter(func(host string) ([]net.IP, error) { return []net.IP{ip1, ip2, ip3}, nil }, NullLogger)
+
+	start := time.Now()
+	err := w.Wait("dns1", &TargetConfig{
+		Target:  "dns.name",
+		Timeout: time.Second,
+	})
+	end := time.Now()
+	require.Error(t, err)
+	assert.Equal(t, "timed out waiting for DNS update to dns1", err.Error())
+	assert.GreaterOrEqual(t, end.Sub(start), time.Second)
+}
+
+func TestDNSWaiter_successAfterDNSChange(t *testing.T) {
+	ips := [][]net.IP{
+		{ip1, ip2, ip3},
+		{ip1, ip2, ip3},
+		{ip4, ip5, ip6},
+	}
+	w := NewDNSWaiter(func(host string) ([]net.IP, error) {
+		next := ips[0]
+		if len(ips) > 0 {
+			ips = ips[1:]
+		}
+		return next, nil
+	}, NullLogger)
+
+	err := w.Wait("dns1", &TargetConfig{
+		Target:  "dns.name",
+		Type:    "dns",
+		Timeout: time.Second * 3,
+	})
+	require.NoError(t, err)
+}
+
+func TestDNSWaiter_allowsAddressrderChange(t *testing.T) {
+	ips := [][]net.IP{
+		{ip1, ip2, ip3},
+		{ip2, ip1, ip3},
+		{ip1, ip3, ip2},
+	}
+	w := NewDNSWaiter(func(host string) ([]net.IP, error) {
+		next := ips[0]
+		if len(ips) > 0 {
+			ips = ips[1:]
+		}
+		return next, nil
+	}, NullLogger)
+
+	err := w.Wait("dns1", &TargetConfig{
+		Target:  "dns.name",
+		Type:    "dns",
+		Timeout: time.Second * 2,
+	})
+	require.Error(t, err)
+}
+
+func TestDNSWaiter_returnsErrorOnStart(t *testing.T) {
+	w := NewDNSWaiter(func(host string) ([]net.IP, error) {
+		return nil, fmt.Errorf("some error")
+	}, NullLogger)
+
+	err := w.Wait("dns1", &TargetConfig{
+		Target:  "dns.name",
+		Type:    "dns",
+		Timeout: time.Second * 2,
+	})
+	assert.Error(t, err)
+}
+
+func TestDNSWaiter_returnsErrorWhenWaitingz(t *testing.T) {
+	errs := []error{nil, nil, fmt.Errorf("some error")}
+	w := NewDNSWaiter(func(host string) ([]net.IP, error) {
+		next := errs[0]
+		if len(errs) > 0 {
+			errs = errs[1:]
+		}
+		return nil, next
+	}, NullLogger)
+
+	err := w.Wait("dns1", &TargetConfig{
+		Target:  "dns.name",
+		Type:    "dns",
+		Timeout: time.Second * 2,
+	})
+	assert.Error(t, err)
 }

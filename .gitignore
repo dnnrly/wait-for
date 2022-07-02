@@ -12,6 +12,7 @@ dist/
 /wait-for
 
 # IDEs
+.vscode/
 .idea/
 *.iml
 

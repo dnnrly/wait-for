@@ -49,6 +49,10 @@ deps: ./bin/tparse
 	go get -v ./...
 	go mod tidy
 
+.PHONY: mocks
+mocks: ## generate mocks for interfaces
+	mockgen -source=waitfor.go -package=waitfor > waitfor_mock_test.go
+
 .PHONY: build
 build: ## build the application
 	go build -o wait-for ./cmd/wait-for

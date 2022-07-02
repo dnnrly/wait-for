@@ -3,10 +3,13 @@ package waitfor
 import (
 	"context"
 	"fmt"
-	"google.golang.org/grpc/credentials/insecure"
 	"net"
 	"net/http"
+	"sort"
+	"strings"
 	"time"
+
+	"google.golang.org/grpc/credentials/insecure"
 
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -14,24 +17,29 @@ import (
 	"github.com/spf13/afero"
 )
 
+type Waiter interface {
+	Wait(name string, target *TargetConfig) error
+}
+
 // WaiterFunc is used to implement waiting for a specific type of target.
 // The name is used in the error and target is the actual destination being tested.
 type WaiterFunc func(name string, target *TargetConfig) error
+
+func (w WaiterFunc) Wait(name string, target *TargetConfig) error {
+	return w(name, target)
+}
+
 type Logger func(string, ...interface{})
 
 // NullLogger can be used in place of a real logging function
 var NullLogger = func(f string, a ...interface{}) {}
 
 // SupportedWaiters is a mapping of known protocol names to waiter implementations
-var SupportedWaiters = map[string]WaiterFunc{
-	"http": HTTPWaiter,
-	"tcp":  TCPWaiter,
-	"grpc": GRPCWaiter,
-}
+var SupportedWaiters map[string]Waiter
 
 // WaitOn implements waiting for many targets, using the location of config file provided with named targets to wait until
 // all of those targets are responding as expected
-func WaitOn(config *Config, logger Logger, targets []string, waiters map[string]WaiterFunc) error {
+func WaitOn(config *Config, logger Logger, targets []string, waiters map[string]Waiter) error {
 
 	for _, target := range targets {
 		if !config.GotTarget(target) {
@@ -80,7 +88,7 @@ func OpenConfig(configFile, defaultTimeout, defaultHTTPTimeout string, fs afero.
 	return config, nil
 }
 
-func waitOnTargets(logger Logger, targets map[string]TargetConfig, waiters map[string]WaiterFunc) error {
+func waitOnTargets(logger Logger, targets map[string]TargetConfig, waiters map[string]Waiter) error {
 	var eg errgroup.Group
 
 	for name, target := range targets {
@@ -108,14 +116,14 @@ func waitOnTargets(logger Logger, targets map[string]TargetConfig, waiters map[s
 	return nil
 }
 
-func waitOnSingleTarget(name string, logger Logger, target TargetConfig, waiter WaiterFunc) error {
+func waitOnSingleTarget(name string, logger Logger, target TargetConfig, waiter Waiter) error {
 	end := time.Now().Add(target.Timeout)
 
-	err := waiter(name, &target)
+	err := waiter.Wait(name, &target)
 	for err != nil && end.After(time.Now()) {
 		logger("error while waiting for %s: %v", name, err)
 		time.Sleep(time.Second)
-		err = waiter(name, &target)
+		err = waiter.Wait(name, &target)
 	}
 
 	if err != nil {
@@ -181,4 +189,60 @@ func isSuccess(code int) bool {
 	}
 
 	return true
+}
+
+type DNSLookup func(host string) ([]net.IP, error)
+
+type DNSWaiter struct {
+	lookup DNSLookup
+	logger Logger
+}
+
+func NewDNSWaiter(lookup DNSLookup, logger Logger) *DNSWaiter {
+	return &DNSWaiter{
+		lookup: lookup,
+		logger: logger,
+	}
+}
+
+type IPList []net.IP
+
+func (l IPList) Equals(r IPList) bool {
+	return l.String() == r.String()
+}
+
+func (l IPList) Len() int {
+	return len(l)
+}
+func (l IPList) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
+func (l IPList) Less(i, j int) bool { return strings.Compare(l[i].String(), l[j].String()) < 0 }
+func (l IPList) String() string {
+	sort.Sort(l)
+	var s []string
+	for _, v := range l {
+		s = append(s, v.String())
+	}
+	return strings.Join(s, ",")
+}
+
+func (w *DNSWaiter) Wait(host string, target *TargetConfig) error {
+	in, _ := w.lookup(target.Target)
+	initial := IPList(in)
+	last := initial
+
+	start := time.Now()
+	now := start
+
+	for now.Sub(start) < target.Timeout {
+		w.logger("got DNS result %s", last)
+		time.Sleep(time.Second)
+		l, _ := w.lookup(target.Target)
+		last = IPList(l)
+
+		if !initial.Equals(last) {
+			return nil
+		}
+		now = time.Now()
+	}
+	return fmt.Errorf("timed out waiting for DNS update to %s", host)
 }

@@ -7,6 +7,12 @@ or environment.
 Typically, you would use this to wait on another resource (such as an HTTP resource)
 to become available before continuing - or timeout and exit with an error.
 
+At the moment, you can wait for a few different kinds of thing. They are:
+
+* HTTP or HTTPS success response
+* TCP or GRPC connection
+* DNS IP resolve address change
+
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/dnnrly/wait-for)](https://github.com/dnnrly/wait-for/releases/latest)
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/dnnrly/wait-for/Release%20workflow)](https://github.com/dnnrly/wait-for/actions?query=workflow%3A%22Release+workflow%22)
 [![codecov](https://codecov.io/gh/dnnrly/wait-for/branch/main/graph/badge.svg?token=s0OfKkTFuI)](https://codecov.io/gh/dnnrly/wait-for)
@@ -28,14 +34,14 @@ go install github.com/dnnrly/wait-for/cmd/wait-for@latest
 If you don't have Go installed (in a Docker container, for example) then you can take advantage of the pre-built versions. Check out the [releases](https://github.com/dnnrly/wait-for/releases) and check out the links for direct downloads. You can download and unpack a release like so:
 
 ```shell
-wget https://github.com/dnnrly/wait-for/releases/download/v0.0.1/wait-for_0.0.1_linux_386.tar.gz
-gunzip wait-for_0.0.1_linux_386.tar.gz
-tar -xfv wait-for_0.0.1_linux_386.tar
+wget https://github.com/dnnrly/wait-for/releases/download/v0.0.5/wait-for_0.0.5_linux_386.tar.gz
+gunzip wait-for_0.0.5_linux_386.tar.gz
+tar -xfv wait-for_0.0.5_linux_386.tar
 ```
 
 In your Dockerfile, you can do this:
 ```docker
-ADD https://github.com/dnnrly/wait-for/releases/download/v0.0.1/wait-for_0.0.1_linux_386.tar.gz wait-for.tar.gz
+ADD https://github.com/dnnrly/wait-for/releases/download/v0.0.1/wait-for_0.0.5_linux_386.tar.gz wait-for.tar.gz
 RUN gunzip wait-for.tar.gz && tar -xf wait-for.tar
 ```
 
@@ -50,9 +56,20 @@ $ wait-for http://your-service-here:8080/health https://another-service/
 ``` 
 
 ### Waiting for gRPC services
+
 ```shell script
 $ wait-for grpc-server:8092 other-grpc-server:9091
 ```
+
+### Waiting for DNS changes
+
+```shell script
+$ wait-for dns:google.com
+```
+
+This will wait for the list of IP addresses bound to that DNS name to be
+updated, regardless of order. You can use this to wait for a DNS update
+such as failover or other similar operations.
 
 ### Preconfiguring services to connect to
 
@@ -81,6 +98,9 @@ wait-for:
   snmp-service:
     type: tcp
     target: snmp-trap-dns:514
+  dns-thing:
+    type: dns
+    target: your.r53-entry.com
 ```
 
 ### Using `wait-for` in Docker Compose
