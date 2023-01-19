@@ -148,7 +148,6 @@ func TCPWaiter(name string, target *TargetConfig) error {
 }
 
 func HTTPWaiter(name string, target *TargetConfig) error {
-
 	client := &http.Client{
 		Timeout: target.HTTPClientTimeout,
 	}
@@ -158,7 +157,11 @@ func HTTPWaiter(name string, target *TargetConfig) error {
 		return fmt.Errorf("could not connect to %s: %v", name, err)
 	}
 	if target.RegexStatus != "" {
-		pattern := regexp.MustCompile(target.RegexStatus)
+		// simplifies safe initialization for holding compiled regular expressions.
+		pattern, err := regexp.Compile(target.RegexStatus)
+		if err != nil {
+			return fmt.Errorf("invalid Regular Expression %v", err)
+		}
 		// Check if the given pattern matches the status code
 		if !pattern.MatchString(strconv.Itoa(resp.StatusCode)) {
 			return fmt.Errorf("%d status Code and %s regex didn't match in %s", resp.StatusCode, pattern.String(), name)
