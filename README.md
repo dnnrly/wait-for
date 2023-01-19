@@ -137,6 +137,17 @@ command.
 ```shell script
 $ make build
 ```
+### Running the tool
+
+To run the tool on Linux / Mac
+```shell script
+$ .\wait-for 
+```
+To run the tool on Windows
+```shell script
+$ wait-for.exe 
+```
+
 
 ### Unit tests
 
