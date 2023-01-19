@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -58,7 +60,7 @@ func WaitOn(config *Config, logger Logger, targets []string, waiters map[string]
 	return nil
 }
 
-func OpenConfig(configFile, defaultTimeout, defaultHTTPTimeout string, fs afero.Fs) (*Config, error) {
+func OpenConfig(configFile, defaultTimeout, defaultHTTPTimeout string, fs afero.Fs, defaultRegexPattern string) (*Config, error) {
 	var config *Config
 	if configFile == "" {
 		config = NewConfig()
@@ -84,7 +86,7 @@ func OpenConfig(configFile, defaultTimeout, defaultHTTPTimeout string, fs afero.
 		return nil, fmt.Errorf("unable to parse http timeout: %v", err)
 	}
 	config.DefaultHTTPClientTimeout = httpTimeout
-
+	config.DefaultRegexStatus = defaultRegexPattern
 	return config, nil
 }
 
@@ -146,6 +148,7 @@ func TCPWaiter(name string, target *TargetConfig) error {
 }
 
 func HTTPWaiter(name string, target *TargetConfig) error {
+
 	client := &http.Client{
 		Timeout: target.HTTPClientTimeout,
 	}
@@ -154,9 +157,16 @@ func HTTPWaiter(name string, target *TargetConfig) error {
 	if err != nil {
 		return fmt.Errorf("could not connect to %s: %v", name, err)
 	}
-
-	if !isSuccess(resp.StatusCode) {
-		return fmt.Errorf("got %d from %s", resp.StatusCode, name)
+	if target.RegexStatus != "" {
+		pattern := regexp.MustCompile(target.RegexStatus)
+		// Check if the given pattern matches the status code
+		if !pattern.MatchString(strconv.Itoa(resp.StatusCode)) {
+			return fmt.Errorf("%d status Code and %s regex didn't match in %s", resp.StatusCode, pattern.String(), name)
+		}
+	} else {
+		if !isSuccess(resp.StatusCode) {
+			return fmt.Errorf("got %d from %s", resp.StatusCode, name)
+		}
 	}
 
 	return nil

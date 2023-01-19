@@ -141,7 +141,7 @@ $ make build
 
 To run the tool on Linux / Mac
 ```shell script
-$ .\wait-for 
+$ ./cmd/wait-for
 ```
 To run the tool on Windows
 ```shell script

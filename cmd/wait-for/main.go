@@ -18,11 +18,13 @@ func main() {
 	httpTimeoutParam := "1s"
 	configFile := ""
 	var quiet bool
+	regexStatus := ""
 
 	flag.StringVar(&timeoutParam, "timeout", timeoutParam, "time to wait for services to become available")
 	flag.StringVar(&httpTimeoutParam, "http_timeout", httpTimeoutParam, "timeout for requests made by a http client")
 	flag.StringVar(&configFile, "config", "", "configuration file to use")
 	flag.BoolVar(&quiet, "quiet", false, "reduce output to the minimum")
+	flag.StringVar(&regexStatus, "regex", "", "Use regex to match the expected result in HTTP status codes")
 	flag.Parse()
 
 	fs := afero.NewOsFs()
@@ -35,7 +37,7 @@ func main() {
 		logger = waitfor.NullLogger
 	}
 
-	config, err := waitfor.OpenConfig(configFile, timeoutParam, httpTimeoutParam, fs)
+	config, err := waitfor.OpenConfig(configFile, timeoutParam, httpTimeoutParam, fs, regexStatus)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "%v", err)
 		os.Exit(1)
