@@ -58,7 +58,7 @@ $ wait-for http://your-service-here:8080/health https://another-service/
 ### Waiting for HTTP services with expected response status
 
 ```shell script
-$ wait-for -regex=[0-2]{3} http://your-service-here:8080/health 
+$ wait-for -status=[0-2]{3} http://your-service-here:8080/health 
 ```  
 
 ### Waiting for gRPC services
