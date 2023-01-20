@@ -15,8 +15,8 @@ const DefaultTimeout = time.Second * 5
 // DefaultHTTPClientTimeout a default value for a time limit for requests made by http client
 const DefaultHTTPClientTimeout = time.Second
 
-// DefaultRegexStatus a default value for the Regex pattern to match in the expected result
-const DefaultRegexStatus = ""
+// DefaultStatusPattern is a default value for the Regex pattern to match in the expected result
+const DefaultStatusPattern = "200"
 
 // TargetConfig is the configuration of a single target
 type TargetConfig struct {
@@ -29,7 +29,7 @@ type TargetConfig struct {
 	// HTTPClientTimeout is the timeout for requests made by a http client
 	HTTPClientTimeout time.Duration `yaml:"http-client-timeout"`
 	// Regex is the regular expression pattern to match in the expected http status code result
-	RegexStatus string `yaml:"http-client-regex"`
+	StatusPattern string `yaml:"http-client-status-pattern"`
 }
 
 // Config represents all the config that can be defined in a config file
@@ -37,7 +37,7 @@ type Config struct {
 	DefaultTimeout           time.Duration `yaml:"default-timeout"`
 	Targets                  map[string]TargetConfig
 	DefaultHTTPClientTimeout time.Duration `yaml:"default-http-client-timeout"`
-	DefaultRegexStatus       string        `yaml:"default-http-client-regex"`
+	DefaultStatusPattern     string        `yaml:"default-http-client-status-pattern"`
 }
 
 // NewConfig creates an empty Config
@@ -46,7 +46,7 @@ func NewConfig() *Config {
 		DefaultTimeout:           DefaultTimeout,
 		Targets:                  map[string]TargetConfig{},
 		DefaultHTTPClientTimeout: DefaultHTTPClientTimeout,
-		DefaultRegexStatus:       DefaultRegexStatus,
+		DefaultStatusPattern:     DefaultStatusPattern,
 	}
 }
 
@@ -63,8 +63,8 @@ func NewConfigFromFile(r io.Reader) (*Config, error) {
 	if config.DefaultHTTPClientTimeout == 0 {
 		config.DefaultHTTPClientTimeout = DefaultHTTPClientTimeout
 	}
-	if config.DefaultRegexStatus == "" {
-		config.DefaultRegexStatus = DefaultRegexStatus
+	if config.DefaultStatusPattern == "" {
+		config.DefaultStatusPattern = DefaultStatusPattern
 	}
 	for t := range config.Targets {
 		target := config.Targets[t]
@@ -74,8 +74,8 @@ func NewConfigFromFile(r io.Reader) (*Config, error) {
 		if config.Targets[t].HTTPClientTimeout == 0 {
 			target.HTTPClientTimeout = config.DefaultHTTPClientTimeout
 		}
-		if config.Targets[t].RegexStatus == "" {
-			target.RegexStatus = config.DefaultRegexStatus
+		if config.Targets[t].StatusPattern == "" {
+			target.StatusPattern = config.DefaultStatusPattern
 		}
 		config.Targets[t] = target
 	}
@@ -105,7 +105,7 @@ func (c *Config) AddFromString(t string) error {
 			Type:              "http",
 			Timeout:           c.DefaultTimeout,
 			HTTPClientTimeout: c.DefaultHTTPClientTimeout,
-			RegexStatus:       c.DefaultRegexStatus,
+			StatusPattern:     c.DefaultStatusPattern,
 		}
 		return nil
 	}
@@ -119,7 +119,7 @@ func (c *Config) AddFromString(t string) error {
 		return nil
 	}
 
-	return errors.New("unable to understand target  " + t)
+	return errors.New("unable to understand target " + t)
 }
 
 func (c *Config) Filter(targets []string) *Config {

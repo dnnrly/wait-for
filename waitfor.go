@@ -60,7 +60,7 @@ func WaitOn(config *Config, logger Logger, targets []string, waiters map[string]
 	return nil
 }
 
-func OpenConfig(configFile, defaultTimeout, defaultHTTPTimeout string, fs afero.Fs, defaultRegexPattern string) (*Config, error) {
+func OpenConfig(configFile, defaultTimeout, defaultHTTPTimeout string, fs afero.Fs, defaultStatusPattern string) (*Config, error) {
 	var config *Config
 	if configFile == "" {
 		config = NewConfig()
@@ -86,7 +86,7 @@ func OpenConfig(configFile, defaultTimeout, defaultHTTPTimeout string, fs afero.
 		return nil, fmt.Errorf("unable to parse http timeout: %v", err)
 	}
 	config.DefaultHTTPClientTimeout = httpTimeout
-	config.DefaultRegexStatus = defaultRegexPattern
+	config.DefaultStatusPattern = defaultStatusPattern
 	return config, nil
 }
 
@@ -156,9 +156,9 @@ func HTTPWaiter(name string, target *TargetConfig) error {
 	if err != nil {
 		return fmt.Errorf("could not connect to %s: %v", name, err)
 	}
-	if target.RegexStatus != "" {
+	if target.StatusPattern != "200" {
 		// simplifies safe initialization for holding compiled regular expressions.
-		pattern, err := regexp.Compile(target.RegexStatus)
+		pattern, err := regexp.Compile(target.StatusPattern)
 		if err != nil {
 			return fmt.Errorf("invalid Regular Expression %v", err)
 		}
