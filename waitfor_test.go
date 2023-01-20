@@ -88,6 +88,7 @@ func TestOpenConfig_defaultHTTPTimeoutCanBeSet(t *testing.T) {
 	assert.NotNil(t, config)
 	assert.Equal(t, time.Second*20, config.DefaultHTTPClientTimeout)
 }
+
 func TestOpenConfig_defaultRegexCanBeSet(t *testing.T) {
 	mockFS := afero.NewMemMapFs()
 	_ = afero.WriteFile(mockFS, "./wait-for.yaml", []byte(defaultConfigYaml()), 0444)
@@ -145,6 +146,7 @@ func TestWaitOnSingleTarget_succeedsAfterWaiting(t *testing.T) {
 	assert.Contains(t, logs, "error while waiting for name: there was an error")
 	assert.Contains(t, logs, "finished waiting for name")
 }
+
 func TestWaitOnSingleTarget_failsIfRegexInvalid(t *testing.T) {
 	var logs []string
 	doLog := func(f string, p ...interface{}) { logs = append(logs, fmt.Sprintf(f, p...)) }
@@ -152,7 +154,7 @@ func TestWaitOnSingleTarget_failsIfRegexInvalid(t *testing.T) {
 	err := waitOnSingleTarget(
 		"name",
 		doLog,
-		TargetConfig{RegexStatus: "{5-2}"},
+		TargetConfig{StatusPattern: "{5-2}"},
 		WaiterFunc(func(name string, target *TargetConfig) error {
 			return fmt.Errorf("")
 		}),
