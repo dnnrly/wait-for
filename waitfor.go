@@ -156,22 +156,10 @@ func HTTPWaiter(name string, target *TargetConfig) error {
 	if err != nil {
 		return fmt.Errorf("could not connect to %s: %v", name, err)
 	}
-	if target.StatusPattern != "200" {
-		// simplifies safe initialization for holding compiled regular expressions.
-		pattern, err := regexp.Compile(target.StatusPattern)
-		if err != nil {
-			return fmt.Errorf("invalid Regular Expression %v", err)
-		}
-		// Check if the given pattern matches the status code
-		if !pattern.MatchString(strconv.Itoa(resp.StatusCode)) {
-			return fmt.Errorf("%d status Code and %s regex didn't match in %s", resp.StatusCode, pattern.String(), name)
-		}
-	} else {
-		if !isSuccess(resp.StatusCode) {
-			return fmt.Errorf("got %d from %s", resp.StatusCode, name)
-		}
+	err = checkStatus(target.StatusPattern, resp.StatusCode)
+	if err != nil {
+		return fmt.Errorf("error in %s : %v", err, name)
 	}
-
 	return nil
 }
 
@@ -189,6 +177,26 @@ func GRPCWaiter(name string, target *TargetConfig) error {
 	}
 	defer conn.Close()
 
+	return nil
+}
+
+// checkStatus checks if the given HTTP status code matches the pattern provided in the target configuration.
+func checkStatus(targetPattern string, code int) error {
+	if targetPattern != "200" {
+		// Safely compile and initialize  the regular expression pattern and verify if it's valid
+		pattern, err := regexp.Compile(targetPattern)
+		if err != nil {
+			return fmt.Errorf("invalid Regular Expression %v", err)
+		}
+		if !pattern.MatchString(strconv.Itoa(code)) {
+			return fmt.Errorf("%d status Code and %s regex didn't match", code, pattern.String())
+		}
+		// if the target is set to default "200", check if the status code is a successful status code
+	} else {
+		if !isSuccess(code) {
+			return fmt.Errorf("got %d ", code)
+		}
+	}
 	return nil
 }
 
