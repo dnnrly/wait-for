@@ -60,7 +60,7 @@ func WaitOn(config *Config, logger Logger, targets []string, waiters map[string]
 	return nil
 }
 
-func OpenConfig(configFile, defaultTimeout, defaultHTTPTimeout string, fs afero.Fs, defaultStatusPattern string) (*Config, error) {
+func OpenConfig(configFile, defaultTimeout, defaultHTTPTimeout, defaultStatusPattern string, fs afero.Fs) (*Config, error) {
 	var config *Config
 	if configFile == "" {
 		config = NewConfig()
