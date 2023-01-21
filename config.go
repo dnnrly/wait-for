@@ -16,7 +16,7 @@ const DefaultTimeout = time.Second * 5
 const DefaultHTTPClientTimeout = time.Second
 
 // DefaultStatusPattern is a default value for the Regex pattern to match in the expected result
-const DefaultStatusPattern = "200"
+const DefaultStatusPattern = "^2..$"
 
 // TargetConfig is the configuration of a single target
 type TargetConfig struct {

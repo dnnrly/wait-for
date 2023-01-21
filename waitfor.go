@@ -182,7 +182,7 @@ func GRPCWaiter(name string, target *TargetConfig) error {
 
 // checkStatus checks if the given HTTP status code matches the pattern provided in the target configuration.
 func checkStatus(targetPattern string, code int) error {
-	if targetPattern != "200" {
+	if targetPattern != "^2..$" {
 		// Safely compile and initialize  the regular expression pattern and verify if it's valid
 		pattern, err := regexp.Compile(targetPattern)
 		if err != nil {
@@ -191,25 +191,8 @@ func checkStatus(targetPattern string, code int) error {
 		if !pattern.MatchString(strconv.Itoa(code)) {
 			return fmt.Errorf("%d status Code and %s regex didn't match", code, pattern.String())
 		}
-		// if the target is set to default "200", check if the status code is a successful status code
-	} else {
-		if !isSuccess(code) {
-			return fmt.Errorf("got %d ", code)
-		}
 	}
 	return nil
-}
-
-func isSuccess(code int) bool {
-	if code < 200 {
-		return false
-	}
-
-	if code >= 300 {
-		return false
-	}
-
-	return true
 }
 
 type DNSLookup func(host string) ([]net.IP, error)

@@ -25,7 +25,7 @@ var (
 )
 
 func TestStatusPattern200(t *testing.T) {
-	err := checkStatus("200", 200)
+	err := checkStatus("^2..$", 200)
 	assert.Nil(t, err)
 }
 
@@ -44,20 +44,10 @@ func TestRegexNotMatch(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func Test_isSuccess(t *testing.T) {
-	assert.True(t, isSuccess(200))
-	assert.True(t, isSuccess(214))
-	assert.False(t, isSuccess(300))
-	assert.False(t, isSuccess(199))
-	assert.False(t, isSuccess(100))
-	assert.False(t, isSuccess(500))
-	assert.False(t, isSuccess(407))
-}
-
 func TestOpenConfig_errorOnFileOpenFailure(t *testing.T) {
 	mockFS := afero.NewMemMapFs()
 
-	config, err := OpenConfig("./wait-for.yaml", "", "", afero.NewReadOnlyFs(mockFS), "")
+	config, err := OpenConfig("./wait-for.yaml", "", "", "", afero.NewReadOnlyFs(mockFS))
 	assert.Error(t, err)
 	assert.Nil(t, config)
 }
@@ -66,7 +56,7 @@ func TestOpenConfig_errorOnFileParsingFailure(t *testing.T) {
 	mockFS := afero.NewMemMapFs()
 	_ = afero.WriteFile(mockFS, "./wait-for.yaml", []byte("this isn't yaml!"), 0444)
 
-	config, err := OpenConfig("./wait-for.yaml", "", "", afero.NewReadOnlyFs(mockFS), "")
+	config, err := OpenConfig("./wait-for.yaml", "", "", "", afero.NewReadOnlyFs(mockFS))
 	assert.Error(t, err)
 	assert.Nil(t, config)
 }
@@ -75,7 +65,7 @@ func TestOpenConfig_errorOnParsingDefaultTimeout(t *testing.T) {
 	mockFS := afero.NewMemMapFs()
 	_ = afero.WriteFile(mockFS, "./wait-for.yaml", []byte(defaultConfigYaml()), 0444)
 
-	config, err := OpenConfig("./wait-for.yaml", "invalid duration", "1s", afero.NewReadOnlyFs(mockFS), "")
+	config, err := OpenConfig("./wait-for.yaml", "invalid duration", "1s", "", afero.NewReadOnlyFs(mockFS))
 	assert.Error(t, err)
 	assert.Nil(t, config)
 }
@@ -84,7 +74,7 @@ func TestOpenConfig_errorOnParsingDefaultHTTPTimeout(t *testing.T) {
 	mockFS := afero.NewMemMapFs()
 	_ = afero.WriteFile(mockFS, "./wait-for.yaml", []byte(defaultConfigYaml()), 0444)
 
-	config, err := OpenConfig("./wait-for.yaml", "10s", "invalid duration", afero.NewReadOnlyFs(mockFS), "")
+	config, err := OpenConfig("./wait-for.yaml", "10s", "invalid duration", "", afero.NewReadOnlyFs(mockFS))
 	assert.Error(t, err)
 	assert.Nil(t, config)
 }
@@ -93,7 +83,7 @@ func TestOpenConfig_defaultTimeoutCanBeSet(t *testing.T) {
 	mockFS := afero.NewMemMapFs()
 	_ = afero.WriteFile(mockFS, "./wait-for.yaml", []byte(defaultConfigYaml()), 0444)
 
-	config, err := OpenConfig("./wait-for.yaml", "19s", "1s", afero.NewReadOnlyFs(mockFS), "")
+	config, err := OpenConfig("./wait-for.yaml", "19s", "1s", "", afero.NewReadOnlyFs(mockFS))
 	assert.NoError(t, err)
 	assert.NotNil(t, config)
 	assert.Equal(t, time.Second*19, config.DefaultTimeout)
@@ -103,7 +93,7 @@ func TestOpenConfig_defaultHTTPTimeoutCanBeSet(t *testing.T) {
 	mockFS := afero.NewMemMapFs()
 	_ = afero.WriteFile(mockFS, "./wait-for.yaml", []byte(defaultConfigYaml()), 0444)
 
-	config, err := OpenConfig("./wait-for.yaml", "19s", "20s", afero.NewReadOnlyFs(mockFS), "")
+	config, err := OpenConfig("./wait-for.yaml", "19s", "20s", "", afero.NewReadOnlyFs(mockFS))
 	assert.NoError(t, err)
 	assert.NotNil(t, config)
 	assert.Equal(t, time.Second*20, config.DefaultHTTPClientTimeout)
@@ -113,7 +103,7 @@ func TestOpenConfig_defaultRegexCanBeSet(t *testing.T) {
 	mockFS := afero.NewMemMapFs()
 	_ = afero.WriteFile(mockFS, "./wait-for.yaml", []byte(defaultConfigYaml()), 0444)
 
-	config, err := OpenConfig("./wait-for.yaml", "5s", "5s", afero.NewReadOnlyFs(mockFS), "[0-9]+")
+	config, err := OpenConfig("./wait-for.yaml", "5s", "5s", "[0-9]+", afero.NewReadOnlyFs(mockFS))
 	assert.NoError(t, err)
 	assert.NotNil(t, config)
 }

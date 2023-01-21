@@ -18,7 +18,7 @@ func main() {
 	httpTimeoutParam := "1s"
 	configFile := ""
 	var quiet bool
-	statusPatternParam := "200"
+	statusPatternParam := "^2..$"
 
 	flag.StringVar(&timeoutParam, "timeout", timeoutParam, "time to wait for services to become available")
 	flag.StringVar(&httpTimeoutParam, "http_timeout", httpTimeoutParam, "timeout for requests made by a http client")
@@ -37,7 +37,7 @@ func main() {
 		logger = waitfor.NullLogger
 	}
 
-	config, err := waitfor.OpenConfig(configFile, timeoutParam, httpTimeoutParam, fs, statusPatternParam)
+	config, err := waitfor.OpenConfig(configFile, timeoutParam, httpTimeoutParam, statusPatternParam, fs)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "%v", err)
 		os.Exit(1)
