@@ -24,6 +24,26 @@ var (
 	ip6 = net.IPv4(byte(0x24), byte(0x22), byte(0x23), byte(0x24))
 )
 
+func TestStatusPattern200(t *testing.T) {
+	err := checkStatus("200", 200)
+	assert.Nil(t, err)
+}
+
+func TestInvalidRegex(t *testing.T) {
+	err := checkStatus("[", 200)
+	assert.Error(t, err)
+}
+
+func TestRegexMatch(t *testing.T) {
+	err := checkStatus("2[0-9]{2}", 200)
+	assert.Nil(t, err)
+}
+
+func TestRegexNotMatch(t *testing.T) {
+	err := checkStatus("2[0-9]{2}", 404)
+	assert.Error(t, err)
+}
+
 func Test_isSuccess(t *testing.T) {
 	assert.True(t, isSuccess(200))
 	assert.True(t, isSuccess(214))
