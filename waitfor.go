@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -58,7 +60,7 @@ func WaitOn(config *Config, logger Logger, targets []string, waiters map[string]
 	return nil
 }
 
-func OpenConfig(configFile, defaultTimeout, defaultHTTPTimeout string, fs afero.Fs) (*Config, error) {
+func OpenConfig(configFile, defaultTimeout, defaultHTTPTimeout, defaultStatusPattern string, fs afero.Fs) (*Config, error) {
 	var config *Config
 	if configFile == "" {
 		config = NewConfig()
@@ -84,7 +86,7 @@ func OpenConfig(configFile, defaultTimeout, defaultHTTPTimeout string, fs afero.
 		return nil, fmt.Errorf("unable to parse http timeout: %v", err)
 	}
 	config.DefaultHTTPClientTimeout = httpTimeout
-
+	config.DefaultStatusPattern = defaultStatusPattern
 	return config, nil
 }
 
@@ -154,11 +156,10 @@ func HTTPWaiter(name string, target *TargetConfig) error {
 	if err != nil {
 		return fmt.Errorf("could not connect to %s: %v", name, err)
 	}
-
-	if !isSuccess(resp.StatusCode) {
-		return fmt.Errorf("got %d from %s", resp.StatusCode, name)
+	err = checkStatus(target.StatusPattern, resp.StatusCode)
+	if err != nil {
+		return fmt.Errorf(" %v ", err)
 	}
-
 	return nil
 }
 
@@ -179,16 +180,17 @@ func GRPCWaiter(name string, target *TargetConfig) error {
 	return nil
 }
 
-func isSuccess(code int) bool {
-	if code < 200 {
-		return false
+// checkStatus checks if the given HTTP status code matches the pattern provided in the target configuration.
+func checkStatus(targetPattern string, code int) error {
+	// Safely compile and initialize  the regular expression pattern and verify if it's valid
+	pattern, err := regexp.Compile(targetPattern)
+	if err != nil {
+		return fmt.Errorf("invalid Regular Expression %v", err)
 	}
-
-	if code >= 300 {
-		return false
+	if !pattern.MatchString(strconv.Itoa(code)) {
+		return fmt.Errorf("%d status Code and %s regex didn't match ( -status=<RegexPattern> )", code, pattern.String())
 	}
-
-	return true
+	return nil
 }
 
 type DNSLookup func(host string) ([]net.IP, error)

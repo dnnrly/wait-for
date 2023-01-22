@@ -9,7 +9,7 @@ to become available before continuing - or timeout and exit with an error.
 
 At the moment, you can wait for a few different kinds of thing. They are:
 
-* HTTP or HTTPS success response
+* HTTP or HTTPS success response or any expected response following regular expressions
 * TCP or GRPC connection
 * DNS IP resolve address change
 
@@ -54,6 +54,12 @@ Feel free to choose from any of the other releases though.
 ```shell script
 $ wait-for http://your-service-here:8080/health https://another-service/
 ``` 
+
+### Waiting for HTTP services with expected response status
+
+```shell script
+$ wait-for -status=[0-2]{3} http://your-service-here:8080/health 
+```  
 
 ### Waiting for gRPC services
 

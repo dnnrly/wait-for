@@ -76,6 +76,28 @@ Feature: Configuration from CLI
     And the time taken is less than "5s"
     And the output contains "timed out waiting for http://non-existent/health"
 
+  Scenario: Status is configurable
+    Given I have an HTTP server running on port 80 that responds with 400
+    When I run wait-for with parameters "-status 400 http://localhost/health"
+    Then I can see that an HTTP request was made for "localhost GET /health"
+    And the output contains "finished waiting for http://localhost/health"
+    And wait-for exits without error
+
+  Scenario: Fails when status is not a valid regex
+    Given I have an HTTP server running on port 80 that responds with 200
+    When I run wait-for with parameters "-status [4-0]{3} http://localhost/health"
+    Then I can see that an HTTP request was made for "localhost GET /health"
+    And the output contains " error while waiting for http://localhost/health:  invalid Regular Expression"
+    And wait-for exits with an error
+
+  Scenario: Fails when status doesn't match response
+    Given I have an HTTP server running on port 80 that responds with 200
+    When I run wait-for with parameters "-status 500 http://localhost/health"
+    Then I can see that an HTTP request was made for "localhost GET /health"
+    And the output contains " error while waiting for http://localhost/health:  200 status Code and 500 regex didn't match"
+    And wait-for exits with an error
+
+
   Scenario: Quiet option removes output when successful
     Given I have an HTTP server running on port 80 that responds with 500 for "3s" then responds with 200
     When I run wait-for with parameters "-quiet http://localhost/health"

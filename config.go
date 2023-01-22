@@ -15,6 +15,9 @@ const DefaultTimeout = time.Second * 5
 // DefaultHTTPClientTimeout a default value for a time limit for requests made by http client
 const DefaultHTTPClientTimeout = time.Second
 
+// DefaultStatusPattern is a default value for the Regex pattern to match in the expected result
+const DefaultStatusPattern = "^2..$"
+
 // TargetConfig is the configuration of a single target
 type TargetConfig struct {
 	// Type is the kind of target being described
@@ -25,13 +28,16 @@ type TargetConfig struct {
 	Timeout time.Duration
 	// HTTPClientTimeout is the timeout for requests made by a http client
 	HTTPClientTimeout time.Duration `yaml:"http-client-timeout"`
+	// Regex is the regular expression pattern to match in the expected http status code result
+	StatusPattern string `yaml:"http-client-status-pattern"`
 }
 
-// Config represents all of the config that can be defined in a config file
+// Config represents all the config that can be defined in a config file
 type Config struct {
 	DefaultTimeout           time.Duration `yaml:"default-timeout"`
 	Targets                  map[string]TargetConfig
 	DefaultHTTPClientTimeout time.Duration `yaml:"default-http-client-timeout"`
+	DefaultStatusPattern     string        `yaml:"default-http-client-status-pattern"`
 }
 
 // NewConfig creates an empty Config
@@ -40,6 +46,7 @@ func NewConfig() *Config {
 		DefaultTimeout:           DefaultTimeout,
 		Targets:                  map[string]TargetConfig{},
 		DefaultHTTPClientTimeout: DefaultHTTPClientTimeout,
+		DefaultStatusPattern:     DefaultStatusPattern,
 	}
 }
 
@@ -56,6 +63,9 @@ func NewConfigFromFile(r io.Reader) (*Config, error) {
 	if config.DefaultHTTPClientTimeout == 0 {
 		config.DefaultHTTPClientTimeout = DefaultHTTPClientTimeout
 	}
+	if config.DefaultStatusPattern == "" {
+		config.DefaultStatusPattern = DefaultStatusPattern
+	}
 	for t := range config.Targets {
 		target := config.Targets[t]
 		if config.Targets[t].Timeout == 0 {
@@ -63,6 +73,9 @@ func NewConfigFromFile(r io.Reader) (*Config, error) {
 		}
 		if config.Targets[t].HTTPClientTimeout == 0 {
 			target.HTTPClientTimeout = config.DefaultHTTPClientTimeout
+		}
+		if config.Targets[t].StatusPattern == "" {
+			target.StatusPattern = config.DefaultStatusPattern
 		}
 		config.Targets[t] = target
 	}
@@ -92,6 +105,7 @@ func (c *Config) AddFromString(t string) error {
 			Type:              "http",
 			Timeout:           c.DefaultTimeout,
 			HTTPClientTimeout: c.DefaultHTTPClientTimeout,
+			StatusPattern:     c.DefaultStatusPattern,
 		}
 		return nil
 	}
