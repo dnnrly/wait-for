@@ -158,7 +158,7 @@ func HTTPWaiter(name string, target *TargetConfig) error {
 	}
 	err = checkStatus(target.StatusPattern, resp.StatusCode)
 	if err != nil {
-		return fmt.Errorf("error in %s : %v", err, name)
+		return fmt.Errorf(" %v ", err)
 	}
 	return nil
 }
@@ -182,15 +182,13 @@ func GRPCWaiter(name string, target *TargetConfig) error {
 
 // checkStatus checks if the given HTTP status code matches the pattern provided in the target configuration.
 func checkStatus(targetPattern string, code int) error {
-	if targetPattern != "^2..$" {
-		// Safely compile and initialize  the regular expression pattern and verify if it's valid
-		pattern, err := regexp.Compile(targetPattern)
-		if err != nil {
-			return fmt.Errorf("invalid Regular Expression %v", err)
-		}
-		if !pattern.MatchString(strconv.Itoa(code)) {
-			return fmt.Errorf("%d status Code and %s regex didn't match", code, pattern.String())
-		}
+	// Safely compile and initialize  the regular expression pattern and verify if it's valid
+	pattern, err := regexp.Compile(targetPattern)
+	if err != nil {
+		return fmt.Errorf("invalid Regular Expression %v", err)
+	}
+	if !pattern.MatchString(strconv.Itoa(code)) {
+		return fmt.Errorf("%d status Code and %s regex didn't match ( -status=<RegexPattern> )", code, pattern.String())
 	}
 	return nil
 }
