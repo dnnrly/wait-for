@@ -14,11 +14,20 @@ Feature: Configuration from CLI
     And the output contains "finished waiting for http://localhost/health"
     And wait-for exits without error
 
+  Scenario: Waits on a HTTP service with a custom status pattern
+    Given I have an HTTP server running on port 80 that responds with 404
+    Given I have an HTTP server running on port 8080 that responds with 4040
+    When I run wait-for with parameters "http://localhost/health" and with status argument "404"
+    Then I can see that an HTTP request was made for "localhost GET /health"
+    And the output contains "started waiting for http://localhost/health"
+    And the output contains "finished waiting for http://localhost/health"
+    And wait-for exits without error
+
   Scenario: Waits on a TCP connection
     Given I have an HTTP server running on port 80 that waits "10s" then responds with 200
     Given I have an HTTP server running on port 8080 that responds with 200
     When I run wait-for with parameters "tcp:localhost:80"
-    Then I can see a connection event "127.0.0.1:80 new"
+    Then I can see a connection event "127.0.0.1:80 new"or "[::1]:80 new"
     And the output contains "started waiting for tcp:localhost:80"
     And the output contains "finished waiting for tcp:localhost:80"
     And wait-for exits without error

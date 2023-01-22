@@ -235,6 +235,10 @@ func (s *stepsData) listeningServerWaitsThenResponds(port int, duration string, 
 	return nil
 }
 
+func iRunWaitforWithParametersAndWithStatusArgument(arg1, arg2 string) error {
+	return godog.ErrPending
+}
+
 func InitializeTestSuite(ctx *godog.TestSuiteContext) {
 	ctx.BeforeSuite(func() {
 	})
@@ -261,12 +265,14 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 			fmt.Printf("Output is:\n%s\n", data.output)
 		}
 	})
+
 	ctx.Step(`^I run wait-for with parameters "([^"]*)"$`, data.iRunWaitforWithParameters)
 	ctx.Step(`^wait-for exits without error$`, data.waitforExitsWithoutError)
 	ctx.Step(`^wait-for exits with an error$`, data.waitforExitsWithAnError)
 	ctx.Step(`^the output contains "([^"]*)"$`, data.theOutputContains)
 	ctx.Step(`^the output does not contain "([^"]*)"$`, data.theOutputDoesNotContain)
 	ctx.Step(`^I can see that an HTTP request was made for "([^"]*)"$`, data.iCanSeeThatAnHTTPRequestWasMadeFor)
+	ctx.Step(`^I run wait-for with parameters "([^"]*)" and with status argument "([^"]*)"$`, iRunWaitforWithParametersAndWithStatusArgument)
 	ctx.Step(`^I have an HTTP server running on port (\d+) that responds with (\d+)$`, data.iHaveAnHTTPServerOnPortWithStatus)
 	ctx.Step(`^the time taken is more than "([^"]*)"`, data.theTimeTakenIsMoreThan)
 	ctx.Step(`^the time taken is less than "([^"]*)"$`, data.theTimeTakenIsLessThan)
