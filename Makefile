@@ -24,7 +24,7 @@ help: ## print help message
 
 .PHONY: clean
 clean:
-	rm -f wait-for
+	rm -f wait-for coverage.txt coverage-merged.txt
 
 .PHONY: clean-deps
 clean-deps:
@@ -67,12 +67,23 @@ test: ## run unit tests
 
 .PHONY: ci-test
 ci-test: ## ci target - run tests to generate coverage data
-	go test -race -coverprofile=coverage.txt -covermode=atomic ./...
+	go test -coverprofile=coverage.txt -covermode=set ./...
 
 .PHONY: acceptance-test
 acceptance-test: build ## run acceptance tests
-	cd test && godog
+	rm -rf tmp/coverage
+	go build -cover -o wait-for ./cmd/wait-for
+	mkdir -p tmp/coverage
+	cd test && GOCOVERDIR=../tmp/coverage godog run
 
 .PHONY: acceptance-test-docker
 acceptance-test-docker: ## run acceptance tests in Docker (if you can't open local ports reliably)
+	rm -rf tmp/coverage
+	mkdir -p ./tmp/coverage
 	docker-compose -f test/docker-compose.yml up --build --abort-on-container-exit godog
+
+.PHONY: coverage-report
+coverage-report: ## collate the coverage data
+	mkdir -p tmp/merged
+	go tool covdata merge -i=./tmp/coverage,./test/tmp/coverage -o tmp/merged
+	go tool covdata textfmt -i=tmp/merged -o coverage-merged.txt
